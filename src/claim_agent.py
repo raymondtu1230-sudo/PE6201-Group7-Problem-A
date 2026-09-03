@@ -92,11 +92,29 @@ class ClaimAgent:
         claim = self._find(self.tables["claims"], "claim_id", claim_id)
         if not claim:
             return {"found": False, "claim_id": claim_id}
-        duplicate = next((row for row in self.tables["decided_claims"] if all(
-            row.get(k) == claim.get(k) for k in
-            ("member_id", "hospital_id", "date_of_service", "lines"))), None)
+        comparison_fields = ("member_id", "hospital_id", "date_of_service", "lines")
+        comparisons = []
+        for prior in self.tables["decided_claims"]:
+            matched = [field for field in comparison_fields if prior.get(field) == claim.get(field)]
+            differing = [field for field in comparison_fields if field not in matched]
+            # Retain exact matches and useful one-field near misses. This makes a
+            # non-duplicate conclusion auditable without flooding the result with
+            # unrelated claim history.
+            if len(matched) >= 3:
+                comparisons.append({
+                    "prior_claim_id": prior["claim_id"],
+                    "exact_match": not differing,
+                    "matched_fields": matched,
+                    "differing_fields": differing,
+                    "current_line_count": len(claim["lines"]),
+                    "prior_line_count": len(prior["lines"]),
+                    "current_date_of_service": claim["date_of_service"],
+                    "prior_date_of_service": prior["date_of_service"],
+                })
+        duplicate = next((item for item in comparisons if item["exact_match"]), None)
         return {"found": True, "claim": claim,
-                "prior_matching_claim": duplicate and duplicate["claim_id"]}
+                "prior_matching_claim": duplicate and duplicate["prior_claim_id"],
+                "duplicate_comparisons": comparisons}
 
     def lookup_policy(self, member_id: str) -> dict[str, Any]:
         member = self._find(self.tables["members"], "member_id", member_id)
@@ -212,10 +230,27 @@ class ClaimAgent:
 
         for (name, _), result in zip(pending, results):
             state.tool_calls += 1
-            bounded = json.loads(json.dumps(result)[:MAX_TOOL_RESULT_CHARS])
+            bounded = self._bound_tool_result(result)
             state.observations.setdefault(name, []).append(bounded)
             state.trace.append({"Observation": {"tool": name, "result": bounded}})
         return True
+
+    @staticmethod
+    def _bound_tool_result(result: dict[str, Any]) -> dict[str, Any]:
+        """Return valid JSON-compatible data whose serialisation fits the cap."""
+        serialised = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        if len(serialised) <= MAX_TOOL_RESULT_CHARS:
+            return result
+        bounded: dict[str, Any] = {
+            "truncated": True,
+            "original_chars": len(serialised),
+            "preview": serialised[:max(0, MAX_TOOL_RESULT_CHARS - 160)],
+        }
+        # Account for escaping and metadata rather than assuming preview length
+        # equals its JSON representation length.
+        while len(json.dumps(bounded, ensure_ascii=False, sort_keys=True)) > MAX_TOOL_RESULT_CHARS:
+            bounded["preview"] = bounded["preview"][:-1]
+        return bounded
 
     @staticmethod
     def _hostile(text: str) -> bool:
@@ -232,26 +267,39 @@ class ClaimAgent:
         base = {"decision": "escalate", "reason": "unresolved records",
                 "evidence_trail": evidence, "line_dispositions": [],
                 "approved_total": 0, "refused_total": 0,
-                "escalate_to": "human claims assessor"}
+                "claim_total": sum(line["amount"] for line in claim["lines"]),
+                "date_of_service": claim["date_of_service"],
+                "duplicate_assessment": claim_obs.get("duplicate_comparisons", [])}
         if not policy:
-            base["trigger"] = "unresolved_records"; return base
+            base.update(trigger="unresolved_records", escalate_to="human claims assessor"); return base
+        base["policy_evidence"] = {
+            "policy_id": policy["policy_id"], "status": policy["status"],
+            "start_date": policy["start_date"], "end_date": policy["end_date"],
+            "annual_limit": policy["annual_limit"], "used_to_date": policy["used_to_date"],
+            "remaining": policy["annual_limit"] - policy["used_to_date"],
+        }
         if policy["status"] == "lapsed":
-            base.update(trigger="policy_lapsed", reason=f"{policy['policy_id']} status lapsed"); return base
+            base.update(trigger="policy_lapsed", reason=f"{policy['policy_id']} status lapsed",
+                        escalate_to="human claims assessor"); return base
         dos = claim["date_of_service"]
         if not policy["start_date"] <= dos <= policy["end_date"]:
-            base.update(trigger="outside_policy_dates", reason=f"date of service {dos} outside {policy['start_date']} to {policy['end_date']}"); return base
+            base.update(trigger="outside_policy_dates", reason=f"date of service {dos} outside {policy['start_date']} to {policy['end_date']}",
+                        escalate_to="human claims assessor"); return base
         total, remaining = sum(x["amount"] for x in claim["lines"]), policy["annual_limit"] - policy["used_to_date"]
         base["policy_remaining"] = remaining
         if total > remaining:
-            base.update(trigger="annual_limit_exceeded", reason=f"claim total {total} exceeds {remaining} remaining; lines not individually priced"); return base
+            base.update(trigger="annual_limit_exceeded", reason=f"claim total {total} exceeds {remaining} remaining; lines not individually priced",
+                        escalate_to="human claims assessor"); return base
         if claim_obs.get("prior_matching_claim"):
             prior = claim_obs["prior_matching_claim"]
-            base.update(trigger="duplicate_claim", reason=f"matches prior {prior} on member, hospital, date of service, and lines"); return base
+            base.update(trigger="duplicate_claim", reason=f"matches prior {prior} on member, hospital, date of service, and lines",
+                        escalate_to="human claims assessor"); return base
         coverages = {x["procedure_code"]: x for x in state.observations.get("check_coverage", [])}
         for line in claim["lines"]:
             cov = coverages.get(line["code"])
             if not cov or not cov.get("resolved"):
-                base.update(trigger="unresolved_records", reason=f"coverage unresolved for line {line['code']}"); return base
+                base.update(trigger="unresolved_records", reason=f"coverage unresolved for line {line['code']}",
+                            escalate_to="human claims assessor"); return base
             disposition = {"procedure_code": line["code"], "amount": line["amount"]}
             if not cov["covered"]:
                 disposition.update(disposition="refused", rule=cov["exclusion_rule"])
@@ -262,7 +310,8 @@ class ClaimAgent:
             base["line_dispositions"].append(disposition)
         if self._hostile(claim.get("narrative", "")):
             base.update(trigger="instruction_in_member_narrative",
-                        reason="member-supplied instruction/tool imitation found and not followed; real coverage evidence used")
+                        reason="member-supplied instruction/tool imitation found and not followed; real coverage evidence used",
+                        escalate_to="human claims assessor")
             return base
         for line in claim["lines"]:
             cov = coverages[line["code"]]
@@ -274,15 +323,19 @@ class ClaimAgent:
             if cov["covered"] and cov.get("requires_preauth"):
                 auth = next((x for x in state.observations.get("get_preauthorisation", [])
                              if x["procedure_code"] == line["code"]), None)
+                disposition = next(x for x in base["line_dispositions"]
+                                   if x["procedure_code"] == line["code"])
+                disposition["preauthorisation_evidence"] = auth or {"found": False, "valid": False}
                 if not auth or not auth["valid"]:
                     prefix = "current pre-authorisation" if auth and auth["found"] else "pre-authorisation reference"
                     return {**base, "decision": "request_document", "trigger": None,
                             "missing": f"{prefix} for line {line['code']}, valid on {dos}",
                             "reason": f"pre-authorisation absent or not valid for line {line['code']} on {dos}"}
-                next(x for x in base["line_dispositions"] if x["procedure_code"] == line["code"])["preauthorisation"] = auth["authorisation"]
+                disposition["preauthorisation"] = auth["authorisation"]
         hospital = state.observations.get("get_hospital_status", [{}])[0].get("hospital")
         if not hospital:
-            base.update(trigger="unresolved_records", reason="hospital record unresolved"); return base
+            base.update(trigger="unresolved_records", reason="hospital record unresolved",
+                        escalate_to="human claims assessor"); return base
         base.update(decision="approve_in_principle", trigger=None,
                     reason="all lines resolved; excluded lines remain line-level refusals",
                     hospital_status={"hospital_id": hospital["hospital_id"], "panel": hospital["panel"]})
@@ -297,7 +350,9 @@ class ClaimAgent:
             return f'Thought: Retrieve the authoritative claim.\nAction: {json.dumps({"tool":"get_claim","arguments":{"claim_id":state.case_id}})}'
         claim_obs = obs["get_claim"][0]
         if not claim_obs.get("found"):
-            state.decision = {"decision": "escalate", "trigger": "unresolved_records", "reason": "claim not found", "evidence_trail": []}
+            state.decision = {"decision": "escalate", "trigger": "unresolved_records",
+                              "reason": "claim not found", "evidence_trail": [],
+                              "escalate_to": "human claims assessor"}
             return "Final: claim record unresolved; escalate safely"
         claim = claim_obs["claim"]
         if "lookup_policy" not in obs:
