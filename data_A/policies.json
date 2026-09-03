@@ -67,5 +67,49 @@
         "rule": "EX-14 cosmetic dermatology"
       }
     ]
+  },
+  {
+    "policy_id": "POL-8001",
+    "product": "Shield Select",
+    "status": "active",
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "annual_limit": 10000,
+    "used_to_date": 1000,
+    "exclusions": [
+      {
+        "code": "70553",
+        "rule": "EX-22 diagnostic imaging limitation"
+      },
+      {
+        "code": "15823",
+        "rule": "EX-29 elective cosmetic surgery"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-8002",
+    "product": "Shield Premier",
+    "status": "active",
+    "start_date": "2026-09-01",
+    "end_date": "2027-08-31",
+    "annual_limit": 9000,
+    "used_to_date": 2500,
+    "exclusions": []
+  },
+  {
+    "policy_id": "POL-8003",
+    "product": "Shield Essential",
+    "status": "active",
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "annual_limit": 5000,
+    "used_to_date": 500,
+    "exclusions": [
+      {
+        "code": "31255",
+        "rule": "EX-31 elective skin resurfacing"
+      }
+    ]
   }
 ]

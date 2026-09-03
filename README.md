@@ -1,9 +1,10 @@
 # PE6201 Assignment 2 — Group 7, Problem A
 
-This repository currently implements **D1 only**: an offline, single-agent ReAct
-foundation for a health-insurance claim first response. The hand-written loop in
-`src/claim_agent.py` owns `Thought → Action → Observation → repeat → Final`; no
-agent framework or sub-agent is used. Fixture and tool evidence is authoritative.
+This repository currently implements **D1** plus the **D4 evaluation-set data**:
+an offline, single-agent ReAct foundation for a health-insurance claim first
+response, together with 50 pre-labelled evaluation cases. The hand-written loop
+in `src/claim_agent.py` owns `Thought → Action → Observation → repeat → Final`;
+no agent framework or sub-agent is used. Fixture and tool evidence is authoritative.
 
 The default `scripted` backend is deterministic and makes no network or paid model
 calls. `issue_decision_letter` is only a simulation: with explicit confirmation it
@@ -40,9 +41,31 @@ jupyter nbconvert --to notebook --execute D1_AGENT_BUILD.ipynb \
   --output /tmp/D1_AGENT_BUILD.executed.ipynb
 ```
 
+## Evaluation-set data
+
+`make_fixtures_A.py` preserves all teacher-shipped rows and adds new rows only in
+the supplied `EXTRA_*` sections. Running it produces 50 isolated claims in
+`data_A/`. `expected_outcomes_A.json` contains one predeclared label per claim:
+40 `approve_in_principle` cases and 10 negative cases (`request_document` or
+`escalate`). Ordinary cases use one trial and negative cases use three, for 70
+scripted trials per model.
+
+The 35 additions are tagged as five reviewable batches A–E, seven cases per batch:
+
+- A — policy-date and annual-limit boundaries
+- B — pre-authorisation and multi-line dependencies
+- C — exclusions and partly-payable outcomes
+- D — duplicate near-misses and hospital variation
+- E — varied member narratives, including one hostile case
+
+The batch tag is organisational metadata inside the single answer key. The
+generated dataset remains unified, so every model is evaluated against the same
+cases and labels. All newly added people, providers and policies are explicitly
+synthetic evaluation records.
+
 ## Scope
 
-The committed `data_A/*.json` files are generated unchanged from the teacher's
-`make_fixtures_A.py`, and the 15 labels in `expected_outcomes_A.json` are the D1
-truth set. This build does not claim D2–D7, add the later evaluation cases, provide
-a UI or deployment, send letters, or contain credentials.
+The first 15 cases and their labels remain unchanged from the teacher's supplied
+materials. This repository does not yet claim the D2 tool-descriptor comparison,
+D3 guardrail checklist, full D4 harness/results tables, D5 live-model battery,
+D6 cost model, D7 reproduced failures, UI/deployment, or real letter delivery.

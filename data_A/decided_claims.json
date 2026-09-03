@@ -54,5 +54,33 @@
     ],
     "decision": "decline",
     "decided_on": "2026-07-30"
+  },
+  {
+    "claim_id": "CLM-8801",
+    "member_id": "M-7002",
+    "hospital_id": "H-500",
+    "date_of_service": "2026-09-20",
+    "lines": [
+      {
+        "code": "99213",
+        "amount": 200
+      }
+    ],
+    "decision": "approve_in_principle",
+    "decided_on": "2026-09-20"
+  },
+  {
+    "claim_id": "CLM-8802",
+    "member_id": "M-7003",
+    "hospital_id": "H-501",
+    "date_of_service": "2026-09-21",
+    "lines": [
+      {
+        "code": "80053",
+        "amount": 90
+      }
+    ],
+    "decision": "approve_in_principle",
+    "decided_on": "2026-09-21"
   }
 ]
