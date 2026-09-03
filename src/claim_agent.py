@@ -25,6 +25,21 @@ OUTPUT_TOKEN_PRICE_PER_MILLION = 0.0
 DEFAULT_MAX_MODEL_CALLS = 12
 DEFAULT_BUDGET_USD = 0.01
 MAX_TOOL_RESULT_CHARS = 8_000
+TOOL_RESULT_SIZE_BOUND = 8_000
+EXECUTION_MODES = ("sequential", "parallel")
+DESCRIPTOR_VERSIONS = ("v1", "v2")
+
+# These dictionaries are also the exact descriptor block placed in every model
+# input. Keeping documentation and accounting sourced from one object prevents
+# descriptor drift.
+TOOL_DESCRIPTORS = {
+    "get_claim": {"signature": "get_claim(claim_id: str)", "what": "Fetch a claim and bounded duplicate evidence.", "input": "Non-empty CLM-* string; bad values return invalid_input.", "returns": "Object containing found, claim, and duplicate evidence; <=8000 JSON characters.", "fails_when": "The identifier is invalid or no fixture row exists.", "irreversible": "No."},
+    "lookup_policy": {"signature": "lookup_policy(member_id: str)", "what": "Resolve the member and its policy.", "input": "Non-empty M-* string; bad values return invalid_input.", "returns": "Found flag, member and policy; <=8000 JSON characters.", "fails_when": "Identifier is invalid or member/policy is absent.", "irreversible": "No."},
+    "check_coverage": {"signature": "check_coverage(procedure_code: str, attached_documents: list[str], policy_id: str)", "what": "Resolve exclusion, document and preauthorisation rules for one line.", "input": "Known code, list of document strings, and POL-* policy ID; bad values return invalid_input.", "returns": "One structured coverage result; <=8000 JSON characters.", "fails_when": "Inputs are invalid or policy/procedure is absent.", "irreversible": "No."},
+    "get_preauthorisation": {"signature": "get_preauthorisation(member_id: str, procedure_code: str, date_of_service: str)", "what": "Find authorisation valid for a covered line and service date.", "input": "M-* member, procedure string, ISO YYYY-MM-DD date; bad values return invalid_input.", "returns": "Validity, selected authorisation and at most 10 matches; <=8000 JSON characters.", "fails_when": "Inputs are invalid; absence is represented by found=false.", "irreversible": "No."},
+    "get_hospital_status": {"signature": "get_hospital_status(hospital_id: str)", "what": "Resolve panel status needed for the final response.", "input": "Non-empty H-* string; bad values return invalid_input.", "returns": "Found flag and hospital; <=8000 JSON characters.", "fails_when": "Identifier is invalid or hospital is absent.", "irreversible": "No."},
+    "issue_decision_letter": {"signature": "issue_decision_letter(claim_id: str, decision_record: object, decision_complete: bool)", "what": "Append one simulated decision record locally.", "input": "CLM-* ID, structured final decision, and decision_complete=true; bad values are blocked.", "returns": "Written flag and gate result; <=8000 JSON characters.", "fails_when": "Decision is incomplete, confirmation is absent, or a write already occurred.", "irreversible": "Yes; requires completed decision, confirm autonomy, explicit confirmation, and zero prior writes."},
+}
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data_A"
@@ -62,6 +77,7 @@ class _State:
     estimated_cost: float = 0.0
     halt_reason: str = ""
     decision: Optional[dict[str, Any]] = None
+    issued_record: Optional[dict[str, Any]] = None
     write_count: int = 0
 
 
@@ -71,10 +87,16 @@ class ClaimAgent:
     def __init__(self, data_dir: Path | str = DATA_DIR, log_path: Path | str = DEFAULT_LOG,
                  backend: str = BACKEND, model: str = MODEL,
                  max_model_calls: int = DEFAULT_MAX_MODEL_CALLS,
-                 budget_usd: float = DEFAULT_BUDGET_USD) -> None:
+                 budget_usd: float = DEFAULT_BUDGET_USD,
+                 execution_mode: str = "parallel", descriptor_version: str = "v1") -> None:
+        if execution_mode not in EXECUTION_MODES:
+            raise ValueError(f"execution_mode must be one of {EXECUTION_MODES}")
+        if descriptor_version not in DESCRIPTOR_VERSIONS:
+            raise ValueError(f"descriptor_version must be one of {DESCRIPTOR_VERSIONS}")
         self.data_dir, self.log_path = Path(data_dir), Path(log_path)
         self.backend, self.model = backend, model
         self.max_model_calls, self.budget_usd = max_model_calls, budget_usd
+        self.execution_mode, self.descriptor_version = execution_mode, descriptor_version
         self.tables = {name: self._load(name) for name in (
             "claims", "members", "policies", "procedures", "preauthorisations",
             "hospitals", "required_documents", "decided_claims")}
@@ -89,6 +111,8 @@ class ClaimAgent:
 
     # ---- tools -----------------------------------------------------------
     def get_claim(self, claim_id: str) -> dict[str, Any]:
+        if not isinstance(claim_id, str) or not claim_id.startswith("CLM-"):
+            return {"found": False, "error": "invalid_input", "claim_id": claim_id}
         claim = self._find(self.tables["claims"], "claim_id", claim_id)
         if not claim:
             return {"found": False, "claim_id": claim_id}
@@ -112,11 +136,24 @@ class ClaimAgent:
                     "prior_date_of_service": prior["date_of_service"],
                 })
         duplicate = next((item for item in comparisons if item["exact_match"]), None)
-        return {"found": True, "claim": claim,
+        result = {"found": True, "claim": claim,
                 "prior_matching_claim": duplicate and duplicate["prior_claim_id"],
                 "duplicate_comparisons": comparisons}
+        if self.descriptor_version == "v2":
+            # Same decision-bearing keys, but a compact, explicitly versioned and
+            # auditable comparison shape rather than repeated dates/counts.
+            result["shape_version"] = "v2"
+            result["duplicate_comparisons"] = [{
+                "prior_claim_id": x["prior_claim_id"], "exact_match": x["exact_match"],
+                "matched_fields": x["matched_fields"], "differing_fields": x["differing_fields"]
+            } for x in comparisons]
+        else:
+            result["shape_version"] = "v1"
+        return result
 
     def lookup_policy(self, member_id: str) -> dict[str, Any]:
+        if not isinstance(member_id, str) or not member_id.startswith("M-"):
+            return {"found": False, "error": "invalid_input", "member_id": member_id}
         member = self._find(self.tables["members"], "member_id", member_id)
         if not member:
             return {"found": False, "member_id": member_id}
@@ -124,11 +161,11 @@ class ClaimAgent:
         return {"found": policy is not None, "member": member, "policy": policy}
 
     def check_coverage(self, procedure_code: str, attached_documents: list[str],
-                       policy_id: Optional[str] = None,
-                       member_id: Optional[str] = None) -> dict[str, Any]:
-        if not policy_id and member_id:
-            lookup = self.lookup_policy(member_id)
-            policy_id = (lookup.get("policy") or {}).get("policy_id")
+                       policy_id: Optional[str] = None) -> dict[str, Any]:
+        if (not isinstance(procedure_code, str) or not isinstance(policy_id, str) or
+                not policy_id.startswith("POL-") or not isinstance(attached_documents, list) or
+                not all(isinstance(x, str) for x in attached_documents)):
+            return {"resolved": False, "error": "invalid_input", "procedure_code": procedure_code}
         policy = self._find(self.tables["policies"], "policy_id", policy_id)
         procedure = self._find(self.tables["procedures"], "code", procedure_code)
         required = self._find(self.tables["required_documents"], "procedure_code", procedure_code)
@@ -145,20 +182,47 @@ class ClaimAgent:
 
     def get_preauthorisation(self, member_id: str, procedure_code: str,
                              date_of_service: str) -> dict[str, Any]:
+        try:
+            valid_input = (isinstance(member_id, str) and member_id.startswith("M-") and
+                           isinstance(procedure_code, str) and bool(procedure_code) and
+                           datetime.strptime(date_of_service, "%Y-%m-%d").strftime("%Y-%m-%d") == date_of_service)
+        except (TypeError, ValueError):
+            valid_input = False
+        if not valid_input:
+            return {"found": False, "valid": False, "error": "invalid_input"}
         matches = [dict(x) for x in self.tables["preauthorisations"]
                    if x["member_id"] == member_id and x["procedure_code"] == procedure_code]
         valid = next((x for x in matches if x["valid_from"] <= date_of_service <= x["valid_to"]), None)
         return {"procedure_code": procedure_code, "date_of_service": date_of_service,
                 "found": bool(matches), "valid": valid is not None,
-                "authorisation": valid, "matches": matches}
+                "authorisation": valid, "matches": matches[:10]}
 
     def get_hospital_status(self, hospital_id: str) -> dict[str, Any]:
+        if not isinstance(hospital_id, str) or not hospital_id.startswith("H-"):
+            return {"found": False, "error": "invalid_input", "hospital": None}
         hospital = self._find(self.tables["hospitals"], "hospital_id", hospital_id)
         return {"found": hospital is not None, "hospital": hospital}
 
     def issue_decision_letter(self, claim_id: str, decision_record: dict[str, Any],
-                              *, state: _State) -> dict[str, Any]:
+                              decision_complete: bool = False, *, state: _State) -> dict[str, Any]:
         """Simulate issuance by one local JSONL append, and only after confirmation."""
+        if not isinstance(claim_id, str) or not claim_id.startswith("CLM-"):
+            return {"written": False, "gate_result": "blocked_invalid_claim_id"}
+        if claim_id != state.case_id:
+            return {"written": False, "gate_result": "blocked_claim_mismatch"}
+        if decision_complete is not True or not isinstance(decision_record, dict):
+            return {"written": False, "gate_result": "blocked_incomplete_decision"}
+        if state.decision is None:
+            return {"written": False, "gate_result": "blocked_no_completed_decision"}
+        if decision_record != state.decision:
+            return {"written": False, "gate_result": "blocked_decision_mismatch"}
+        if decision_record.get("decision") not in {
+                "approve_in_principle", "request_document", "escalate"}:
+            return {"written": False, "gate_result": "blocked_unsupported_decision"}
+        if (not isinstance(decision_record.get("reason"), str) or
+                not decision_record["reason"].strip() or
+                not isinstance(decision_record.get("evidence_trail"), list)):
+            return {"written": False, "gate_result": "blocked_incomplete_decision"}
         if state.write_count:
             return {"written": False, "gate_result": "blocked_already_written"}
         if state.autonomy != "confirm" or not state.confirmed:
@@ -172,7 +236,7 @@ class ClaimAgent:
         with self.log_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
         state.write_count += 1
-        state.decision = record
+        state.issued_record = record
         return {"written": True, "gate_result": "confirmed"}
 
     # ---- explicit ReAct mechanics ---------------------------------------
@@ -218,7 +282,7 @@ class ClaimAgent:
         # Independent reads in the same Action block run together. State-changing
         # issuance is intentionally never mixed into a concurrent batch.
         try:
-            if len(pending) > 1 and all(name != "issue_decision_letter" for name, _ in pending):
+            if self.execution_mode == "parallel" and len(pending) > 1 and all(name != "issue_decision_letter" for name, _ in pending):
                 with ThreadPoolExecutor(max_workers=len(pending)) as executor:
                     results = list(executor.map(invoke, pending))
             else:
@@ -346,6 +410,8 @@ class ClaimAgent:
         if self.backend != "scripted":
             raise RuntimeError("No live backend configured; provide an isolated adapter explicitly")
         obs = state.observations
+        if "issue_decision_letter" in obs:
+            return f"Final: {state.decision['decision']} — {state.decision['reason']}"
         if "get_claim" not in obs:
             return f'Thought: Retrieve the authoritative claim.\nAction: {json.dumps({"tool":"get_claim","arguments":{"claim_id":state.case_id}})}'
         claim_obs = obs["get_claim"][0]
@@ -363,11 +429,14 @@ class ClaimAgent:
                 sum(x["amount"] for x in claim["lines"]) > policy["annual_limit"] - policy["used_to_date"] or
                 claim_obs.get("prior_matching_claim")):
             state.decision = self._build_decision(state)
-        elif "check_coverage" not in obs:
+        elif len(obs.get("check_coverage", [])) < len(claim["lines"]):
+            done = {x.get("procedure_code") for x in obs.get("check_coverage", [])}
             calls = [{"tool": "check_coverage", "arguments": {"policy_id": policy["policy_id"],
                       "procedure_code": line["code"], "attached_documents": claim["documents"]}}
-                     for line in claim["lines"]]
-            calls.append({"tool": "get_hospital_status", "arguments": {"hospital_id": claim["hospital_id"]}})
+                     for line in claim["lines"] if line["code"] not in done]
+            if self.execution_mode == "sequential": calls = calls[:1]
+            elif "get_hospital_status" not in obs:
+                calls.append({"tool": "get_hospital_status", "arguments": {"hospital_id": claim["hospital_id"]}})
             return f'Thought: Coverage calls are independent by line; run them with hospital lookup.\nAction: {json.dumps(calls)}'
         else:
             needed = [x for x in obs["check_coverage"] if x.get("covered") and x.get("requires_preauth")]
@@ -377,11 +446,15 @@ class ClaimAgent:
                 calls = [{"tool": "get_preauthorisation", "arguments": {"member_id": claim["member_id"],
                           "procedure_code": x["procedure_code"], "date_of_service": claim["date_of_service"]}}
                          for x in todo]
+                if self.execution_mode == "sequential": calls = calls[:1]
                 return f'Thought: Fetch only required pre-authorisations after coverage observations.\nAction: {json.dumps(calls)}'
+            if "get_hospital_status" not in obs:
+                calls = [{"tool": "get_hospital_status", "arguments": {"hospital_id": claim["hospital_id"]}}]
+                return f'Thought: Resolve hospital after line dependencies.\nAction: {json.dumps(calls)}'
             state.decision = self._build_decision(state)
         if "issue_decision_letter" not in obs:
             action = {"tool": "issue_decision_letter", "arguments": {"claim_id": state.case_id,
-                      "decision_record": state.decision}}
+                      "decision_record": state.decision, "decision_complete": True}}
             return f'Thought: Decision is evidence-based; request the confirmation-gated simulated write.\nAction: {json.dumps(action)}'
         return f"Final: {state.decision['decision']} — {state.decision['reason']}"
 
@@ -392,7 +465,9 @@ class ClaimAgent:
                 state.halt_reason = "budget_cap"; break
             response = self.call_model(state)
             state.model_calls += 1
-            state.input_tokens += max(1, len(json.dumps(state.trace)) // 4)
+            prompt = {"system": "Single-agent ReAct claims workflow", "tools": TOOL_DESCRIPTORS,
+                      "descriptor_version": self.descriptor_version, "history": state.trace}
+            state.input_tokens += max(1, len(json.dumps(prompt, sort_keys=True)) // 4)
             state.output_tokens += max(1, len(response) // 4)
             state.estimated_cost = ((state.input_tokens * INPUT_TOKEN_PRICE_PER_MILLION +
                                      state.output_tokens * OUTPUT_TOKEN_PRICE_PER_MILLION) / 1_000_000)
@@ -412,7 +487,7 @@ class ClaimAgent:
                 break
         else:
             state.halt_reason = "model_call_cap"
-        return RunResult(claim_id, state.decision, state.trace, state.action_turns,
+        return RunResult(claim_id, state.issued_record or state.decision, state.trace, state.action_turns,
                          state.model_calls, state.tool_calls, state.input_tokens,
                          state.output_tokens, state.estimated_cost, state.halt_reason,
                          state.write_count)

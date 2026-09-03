@@ -1,0 +1,23 @@
+{
+  "measurement": "serialized JSON characters over all 50 claims",
+  "profiles": [
+    {
+      "cases": 50,
+      "descriptor_version": "v1",
+      "max_chars": 733,
+      "mean_chars": 435.24,
+      "min_chars": 319,
+      "tool": "get_claim",
+      "total_chars": 21762
+    },
+    {
+      "cases": 50,
+      "descriptor_version": "v2",
+      "max_chars": 605,
+      "mean_chars": 409.64,
+      "min_chars": 319,
+      "tool": "get_claim",
+      "total_chars": 20482
+    }
+  ]
+}
