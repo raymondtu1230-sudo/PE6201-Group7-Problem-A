@@ -22,5 +22,17 @@
     "name": "Penang Medical",
     "panel": false,
     "country": "MY"
+  },
+  {
+    "hospital_id": "H-500",
+    "name": "Orchard Day Centre",
+    "panel": true,
+    "country": "SG"
+  },
+  {
+    "hospital_id": "H-501",
+    "name": "Lakeside Medical Suites",
+    "panel": false,
+    "country": "SG"
   }
 ]
