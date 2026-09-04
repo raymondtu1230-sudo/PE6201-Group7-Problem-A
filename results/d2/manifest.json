@@ -1,5 +1,7 @@
 {
-  "observation_profile.json": "b3ab0abdab151e4dcee6806d38f8f387675a8ca831fc3d9f8cbd05b47b4df025",
-  "scripted_parallel.json": "da3fcdb4fa5132d14bd7ef922aacacbff3fe0c177d22eb933f42727ddce079b0",
-  "scripted_sequential.json": "7a642bd4a9d446335e084d6ef818d6d56e6367cac27668516b9f709b47db1207"
+  "descriptor_guardrails.json": "98f60d7c140394a45858d08a4de6e4f58cc3b8583502c1e6a70ea08344045b2c",
+  "observation_profile.json": "f985513124a5d4e57522e527b2e2a3e3486f8a60c60bb00937080cdd7401e60c",
+  "scripted_parallel.json": "c6ec3a69068ded8461d8ec9edb96b59870d816128b0639537a08fd1fc1a14a71",
+  "scripted_sequential.json": "8d51286fef7aa54d8fd48cc22ba0aa398b6a5c424bd82c668719b223464a5bfd",
+  "versioned_full_scorer.json": "5fd619983aa50eef4d8f040eee8b2bc117d9bd96c596336e7776529cc8bbcb22"
 }

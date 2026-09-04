@@ -4,8 +4,7 @@
 
 D4 evaluates the existing hand-written, single-agent ReAct workflow offline. The
 current frozen set contains **50 cases: 15 teacher-supplied cases plus 35
-student-added cases**. This satisfies the teacher's latest recommendation of
-**50+ total cases**. The additions remain grouped into batches A–E, with seven
+student-added cases**. The latest permitted range is **30–50 cases**, so 50 is the permitted upper limit. Ten cases are negative and the schedule contains **70 trials**. The additions remain grouped into batches A–E, with seven
 cases in each batch.
 
 The schedule contains 70 trials: 40 ordinary cases run once and 10 negative
