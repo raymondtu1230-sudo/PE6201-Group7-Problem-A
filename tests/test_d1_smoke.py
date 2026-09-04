@@ -86,8 +86,9 @@ class D1SmokeTests(unittest.TestCase):
         state = _State(case_id="X", autonomy="confirm", confirmed=True)
         action = '{"tool":"get_claim","arguments":{"claim_id":"CLM-8850"}}'
         self.assertTrue(self.agent.execute_action_block(action, state))
-        self.assertTrue(self.agent.execute_action_block(action, state))
+        self.assertFalse(self.agent.execute_action_block(action, state))
         self.assertEqual(1, state.tool_calls)
+        self.assertEqual("duplicate_action", state.halt_reason)
 
     def test_oversized_tool_result_stays_valid_and_bounded(self):
         bounded = self.agent._bound_tool_result({"payload": "x" * (MAX_TOOL_RESULT_CHARS * 2)})

@@ -23,11 +23,13 @@ BASE_URL = ""
 INPUT_TOKEN_PRICE_PER_MILLION = 0.0
 OUTPUT_TOKEN_PRICE_PER_MILLION = 0.0
 DEFAULT_MAX_MODEL_CALLS = 12
+DEFAULT_MAX_STEPS = DEFAULT_MAX_MODEL_CALLS
 DEFAULT_BUDGET_USD = 0.01
 MAX_TOOL_RESULT_CHARS = 8_000
 TOOL_RESULT_SIZE_BOUND = 8_000
 EXECUTION_MODES = ("sequential", "parallel")
 DESCRIPTOR_VERSIONS = ("v1", "v2")
+AUTONOMY_SETTINGS = ("suggest", "confirm", "act")
 
 # These dictionaries are also the exact descriptor block placed in every model
 # input. Keeping documentation and accounting sourced from one object prevents
@@ -38,7 +40,7 @@ TOOL_DESCRIPTORS = {
     "check_coverage": {"signature": "check_coverage(procedure_code: str, attached_documents: list[str], policy_id: str)", "what": "Resolve exclusion, document and preauthorisation rules for one line.", "input": "Known code, list of document strings, and POL-* policy ID; bad values return invalid_input.", "returns": "One structured coverage result; <=8000 JSON characters.", "fails_when": "Inputs are invalid or policy/procedure is absent.", "irreversible": "No."},
     "get_preauthorisation": {"signature": "get_preauthorisation(member_id: str, procedure_code: str, date_of_service: str)", "what": "Find authorisation valid for a covered line and service date.", "input": "M-* member, procedure string, ISO YYYY-MM-DD date; bad values return invalid_input.", "returns": "Validity, selected authorisation and at most 10 matches; <=8000 JSON characters.", "fails_when": "Inputs are invalid; absence is represented by found=false.", "irreversible": "No."},
     "get_hospital_status": {"signature": "get_hospital_status(hospital_id: str)", "what": "Resolve panel status needed for the final response.", "input": "Non-empty H-* string; bad values return invalid_input.", "returns": "Found flag and hospital; <=8000 JSON characters.", "fails_when": "Identifier is invalid or hospital is absent.", "irreversible": "No."},
-    "issue_decision_letter": {"signature": "issue_decision_letter(claim_id: str, decision_record: object, decision_complete: bool)", "what": "Append one simulated decision record locally.", "input": "CLM-* ID, structured final decision, and decision_complete=true; bad values are blocked.", "returns": "Written flag and gate result; <=8000 JSON characters.", "fails_when": "Decision is incomplete, confirmation is absent, or a write already occurred.", "irreversible": "Yes; requires completed decision, confirm autonomy, explicit confirmation, and zero prior writes."},
+    "issue_decision_letter": {"signature": "issue_decision_letter(claim_id: str, decision_record: object, decision_complete: bool)", "what": "Append at most one simulated decision record locally when the autonomy gate permits it.", "input": "CLM-* ID, structured final decision, and decision_complete=true; bad values are blocked.", "returns": "Written flag and gate result; <=8000 JSON characters.", "fails_when": "Claim or decision validation fails, hostile text is not safely escalated, suggest mode is active, confirm mode lacks confirmation, or a write already occurred.", "irreversible": "Yes; suggest blocks, confirm requires explicit confirmation, and act permits one valid write without additional confirmation; all modes enforce validation and at-most-once writing."},
 }
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +61,7 @@ class RunResult:
     estimated_cost: float
     halt_reason: str
     write_count: int
+    guardrail: Optional[dict[str, Any]] = None
 
 
 @dataclass
@@ -79,23 +82,37 @@ class _State:
     decision: Optional[dict[str, Any]] = None
     issued_record: Optional[dict[str, Any]] = None
     write_count: int = 0
+    guardrail: Optional[dict[str, Any]] = None
 
 
 class ClaimAgent:
-    """One hand-written ReAct agent with a confirmation-gated local write."""
+    """One hand-written ReAct agent with an autonomy-gated local write."""
 
     def __init__(self, data_dir: Path | str = DATA_DIR, log_path: Path | str = DEFAULT_LOG,
                  backend: str = BACKEND, model: str = MODEL,
                  max_model_calls: int = DEFAULT_MAX_MODEL_CALLS,
                  budget_usd: float = DEFAULT_BUDGET_USD,
-                 execution_mode: str = "parallel", descriptor_version: str = "v1") -> None:
+                 execution_mode: str = "parallel", descriptor_version: str = "v1",
+                 max_steps: Optional[int] = None,
+                 model_call_cost_usd: float = 0.0) -> None:
         if execution_mode not in EXECUTION_MODES:
             raise ValueError(f"execution_mode must be one of {EXECUTION_MODES}")
         if descriptor_version not in DESCRIPTOR_VERSIONS:
             raise ValueError(f"descriptor_version must be one of {DESCRIPTOR_VERSIONS}")
         self.data_dir, self.log_path = Path(data_dir), Path(log_path)
         self.backend, self.model = backend, model
-        self.max_model_calls, self.budget_usd = max_model_calls, budget_usd
+        # A step is one complete model response processed by the hand-written
+        # loop, whether it contains an Action or Final. ``max_model_calls`` is
+        # retained as the D1/D2-compatible spelling.
+        self.max_steps = max_model_calls if max_steps is None else max_steps
+        if not isinstance(self.max_steps, int) or self.max_steps < 0:
+            raise ValueError("max_steps must be a non-negative integer")
+        if not isinstance(budget_usd, (int, float)) or budget_usd < 0:
+            raise ValueError("budget_usd must be non-negative")
+        if not isinstance(model_call_cost_usd, (int, float)) or model_call_cost_usd < 0:
+            raise ValueError("model_call_cost_usd must be non-negative")
+        self.max_model_calls, self.budget_usd = self.max_steps, float(budget_usd)
+        self.model_call_cost_usd = float(model_call_cost_usd)
         self.execution_mode, self.descriptor_version = execution_mode, descriptor_version
         self.tables = {name: self._load(name) for name in (
             "claims", "members", "policies", "procedures", "preauthorisations",
@@ -205,11 +222,27 @@ class ClaimAgent:
 
     def issue_decision_letter(self, claim_id: str, decision_record: dict[str, Any],
                               decision_complete: bool = False, *, state: _State) -> dict[str, Any]:
-        """Simulate issuance by one local JSONL append, and only after confirmation."""
+        """Append at most once when validation and the selected autonomy mode permit."""
         if not isinstance(claim_id, str) or not claim_id.startswith("CLM-"):
             return {"written": False, "gate_result": "blocked_invalid_claim_id"}
         if claim_id != state.case_id:
             return {"written": False, "gate_result": "blocked_claim_mismatch"}
+        claim = self._find(self.tables["claims"], "claim_id", claim_id)
+        if (claim and self._hostile(claim.get("narrative", "")) and not (
+                isinstance(decision_record, dict) and
+                decision_record.get("decision") == "escalate" and
+                decision_record.get("trigger") == "instruction_in_member_narrative")):
+            # Narrative is untrusted data. Even a scripted/model attempt that
+            # fabricates an approval is stopped at the irreversible boundary.
+            state.decision = {
+                "decision": "escalate",
+                "trigger": "instruction_in_member_narrative",
+                "reason": "member-supplied instruction/tool imitation found and not followed",
+                "evidence_trail": [item["Observation"] for item in state.trace
+                                   if "Observation" in item],
+                "escalate_to": "human claims assessor",
+            }
+            return {"written": False, "gate_result": "blocked_hostile_instruction"}
         if decision_complete is not True or not isinstance(decision_record, dict):
             return {"written": False, "gate_result": "blocked_incomplete_decision"}
         if state.decision is None:
@@ -225,19 +258,25 @@ class ClaimAgent:
             return {"written": False, "gate_result": "blocked_incomplete_decision"}
         if state.write_count:
             return {"written": False, "gate_result": "blocked_already_written"}
-        if state.autonomy != "confirm" or not state.confirmed:
+        if state.autonomy == "suggest":
+            return {"written": False, "gate_result": "blocked_suggest_mode"}
+        if state.autonomy == "confirm" and not state.confirmed:
             return {"written": False, "gate_result": "blocked_confirmation_required"}
+        if state.autonomy not in AUTONOMY_SETTINGS:
+            return {"written": False, "gate_result": "blocked_invalid_autonomy"}
         record = dict(decision_record)
         record.update({"timestamp": datetime.now(timezone.utc).isoformat(),
                        "case_id": claim_id, "autonomy_setting": state.autonomy,
-                       "gate_result": "confirmed", "turns": state.action_turns,
+                       "gate_result": "confirmed" if state.autonomy == "confirm" else "acted",
+                       "turns": state.action_turns,
                        "estimated_cost": state.estimated_cost})
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         with self.log_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
         state.write_count += 1
         state.issued_record = record
-        return {"written": True, "gate_result": "confirmed"}
+        return {"written": True,
+                "gate_result": "confirmed" if state.autonomy == "confirm" else "acted"}
 
     # ---- explicit ReAct mechanics ---------------------------------------
     def _tool_map(self) -> dict[str, Callable[..., dict[str, Any]]]:
@@ -267,10 +306,16 @@ class ClaimAgent:
             if not isinstance(args, dict):
                 state.halt_reason = "malformed_action"
                 return False
-            key = json.dumps(call, sort_keys=True)
+            # Only semantic action content participates: canonical JSON makes
+            # dictionary key order irrelevant while preserving real arg changes.
+            key = json.dumps({"tool": name, "arguments": args}, sort_keys=True,
+                             separators=(",", ":"), ensure_ascii=False)
             if key in state.action_keys:
-                state.trace.append({"Observation": {"tool": name, "deduplicated": True}})
-                continue
+                state.halt_reason = "duplicate_action"
+                state.guardrail = {"type": "action_deduplication", "fingerprint": key,
+                                   "tool": name, "blocked": True}
+                state.trace.append({"Guardrail": state.guardrail})
+                return False
             state.action_keys.add(key)
             pending.append((name, args))
 
@@ -320,7 +365,9 @@ class ClaimAgent:
     def _hostile(text: str) -> bool:
         lowered = text.lower()
         return any(mark in lowered for mark in
-                   ("system note:", "ignore the exclusions", "returned:", "approve all lines"))
+                   ("system note:", "ignore the exclusions", "returned:",
+                    "approve all lines", "issue_decision_letter",
+                    "fabricate pre-authorisation", "fabricate preauthorization"))
 
     def _build_decision(self, state: _State) -> dict[str, Any]:
         claim_obs = state.observations["get_claim"][0]
@@ -455,22 +502,47 @@ class ClaimAgent:
         if "issue_decision_letter" not in obs:
             action = {"tool": "issue_decision_letter", "arguments": {"claim_id": state.case_id,
                       "decision_record": state.decision, "decision_complete": True}}
-            return f'Thought: Decision is evidence-based; request the confirmation-gated simulated write.\nAction: {json.dumps(action)}'
+            return f'Thought: Decision is evidence-based; request the autonomy-gated simulated write.\nAction: {json.dumps(action)}'
         return f"Final: {state.decision['decision']} — {state.decision['reason']}"
 
-    def run(self, claim_id: str, *, confirm: bool = False, autonomy: str = "confirm") -> RunResult:
+    def run(self, claim_id: str, *, confirm: bool = False,
+            autonomy: Optional[str] = "confirm") -> RunResult:
         state = _State(case_id=claim_id, autonomy=autonomy, confirmed=confirm)
-        while state.model_calls < self.max_model_calls:
-            if state.estimated_cost > self.budget_usd:
-                state.halt_reason = "budget_cap"; break
+        if autonomy not in AUTONOMY_SETTINGS:
+            state.halt_reason = "invalid_autonomy"
+            state.guardrail = {"type": "autonomy", "value": autonomy,
+                               "allowed": list(AUTONOMY_SETTINGS), "blocked": True}
+            state.trace.append({"Guardrail": state.guardrail})
+        while not state.halt_reason:
+            # Checked before the call: exactly max_steps responses may run, and
+            # no action from a (max_steps + 1)th response can be produced.
+            if state.model_calls >= self.max_steps:
+                state.halt_reason = "step_cap"
+                state.guardrail = {"type": "step_cap", "limit": self.max_steps,
+                                   "steps_used": state.model_calls, "blocked": True}
+                state.trace.append({"Guardrail": state.guardrail})
+                break
             response = self.call_model(state)
-            state.model_calls += 1
             prompt = {"system": "Single-agent ReAct claims workflow", "tools": TOOL_DESCRIPTORS,
                       "descriptor_version": self.descriptor_version, "history": state.trace}
-            state.input_tokens += max(1, len(json.dumps(prompt, sort_keys=True)) // 4)
-            state.output_tokens += max(1, len(response) // 4)
-            state.estimated_cost = ((state.input_tokens * INPUT_TOKEN_PRICE_PER_MILLION +
-                                     state.output_tokens * OUTPUT_TOKEN_PRICE_PER_MILLION) / 1_000_000)
+            next_input = max(1, len(json.dumps(prompt, sort_keys=True)) // 4)
+            next_output = max(1, len(response) // 4)
+            state.model_calls += 1
+            state.input_tokens += next_input
+            state.output_tokens += next_output
+            state.estimated_cost = round(
+                (state.input_tokens * INPUT_TOKEN_PRICE_PER_MILLION +
+                 state.output_tokens * OUTPUT_TOKEN_PRICE_PER_MILLION) / 1_000_000 +
+                state.model_calls * self.model_call_cost_usd, 12)
+            # The response cost is measured, but its proposed action is not
+            # executed when that response takes the run over budget.
+            if state.estimated_cost > self.budget_usd:
+                state.halt_reason = "budget_cap"
+                state.guardrail = {"type": "budget_ceiling", "ceiling_usd": self.budget_usd,
+                                   "measured_cost_usd": state.estimated_cost,
+                                   "steps_used": state.model_calls, "blocked": True}
+                state.trace.append({"Guardrail": state.guardrail})
+                break
             thought = re.search(r"Thought:\s*(.*)", response)
             if thought:
                 state.trace.append({"Thought": thought.group(1)})
@@ -485,12 +557,10 @@ class ClaimAgent:
             state.trace.append({"Action": action[1].strip()})
             if not self.execute_action_block(action[1].strip(), state):
                 break
-        else:
-            state.halt_reason = "model_call_cap"
         return RunResult(claim_id, state.issued_record or state.decision, state.trace, state.action_turns,
                          state.model_calls, state.tool_calls, state.input_tokens,
                          state.output_tokens, state.estimated_cost, state.halt_reason,
-                         state.write_count)
+                         state.write_count, state.guardrail)
 
 
 if __name__ == "__main__":
