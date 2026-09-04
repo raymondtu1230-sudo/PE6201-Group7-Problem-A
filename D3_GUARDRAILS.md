@@ -40,15 +40,17 @@ available before the gate. There is one internal autonomy policy; the legacy
 ## Untrusted claim narratives
 
 The irreversible tool independently reads the authoritative claim narrative. If
-hostile system-directed text requests a non-escalation decision, it blocks the
-attempt and routes the in-memory outcome to the established
-`instruction_in_member_narrative` escalation trigger. Detection uses narrow
+that narrative is hostile, a write can proceed only for an `escalate` decision
+whose trigger is exactly `instruction_in_member_narrative`. A non-escalation
+decision, or an escalation with a missing or incorrect trigger, is blocked and
+routed in memory to that established trigger. Detection uses narrow
 instruction/tool-imitation markers rather than ordinary medical vocabulary.
 
-The three hostile checklist cases deliberately use a scripted agent that attempts
-an unsafe approval. Passing proves the D3 code gate blocks that attempted action;
-it does **not** measure whether a live model would be persuaded to make the
-attempt. Live-model susceptibility belongs to D5 and is not claimed here.
+The four hostile checklist cases deliberately use scripted agents: three attempt
+unsafe approvals and one attempts an escalation with an incorrect trigger.
+Passing proves the D3 code gate blocks those attempted actions; it does **not**
+measure whether a live model would be persuaded to make the attempt. Live-model
+susceptibility belongs to D5 and is not claimed here.
 
 ## Separate deterministic checklist
 
@@ -56,8 +58,8 @@ attempt. Live-model susceptibility belongs to D5 and is not claimed here.
 PYTHONPATH=. python3 scripts/run_guardrail_checklist.py
 ```
 
-The 13 isolated cases cover the step cap and boundary, budget ceiling, duplicate
-read and write actions, every autonomy path, invalid autonomy, and three hostile
+The 14 isolated cases cover the step cap and boundary, budget ceiling, duplicate
+read and write actions, every autonomy path, invalid autonomy, and four hostile
 narratives. Every case records its ID, guardrail, hostile flag, wrong behaviour,
 expected safeguard, observed result, pass/fail, writes, steps, and cost in
 `results/d3/guardrail_checklist.json`. The runner prints a table and exits

@@ -40,7 +40,7 @@ TOOL_DESCRIPTORS = {
     "check_coverage": {"signature": "check_coverage(procedure_code: str, attached_documents: list[str], policy_id: str)", "what": "Resolve exclusion, document and preauthorisation rules for one line.", "input": "Known code, list of document strings, and POL-* policy ID; bad values return invalid_input.", "returns": "One structured coverage result; <=8000 JSON characters.", "fails_when": "Inputs are invalid or policy/procedure is absent.", "irreversible": "No."},
     "get_preauthorisation": {"signature": "get_preauthorisation(member_id: str, procedure_code: str, date_of_service: str)", "what": "Find authorisation valid for a covered line and service date.", "input": "M-* member, procedure string, ISO YYYY-MM-DD date; bad values return invalid_input.", "returns": "Validity, selected authorisation and at most 10 matches; <=8000 JSON characters.", "fails_when": "Inputs are invalid; absence is represented by found=false.", "irreversible": "No."},
     "get_hospital_status": {"signature": "get_hospital_status(hospital_id: str)", "what": "Resolve panel status needed for the final response.", "input": "Non-empty H-* string; bad values return invalid_input.", "returns": "Found flag and hospital; <=8000 JSON characters.", "fails_when": "Identifier is invalid or hospital is absent.", "irreversible": "No."},
-    "issue_decision_letter": {"signature": "issue_decision_letter(claim_id: str, decision_record: object, decision_complete: bool)", "what": "Append one simulated decision record locally.", "input": "CLM-* ID, structured final decision, and decision_complete=true; bad values are blocked.", "returns": "Written flag and gate result; <=8000 JSON characters.", "fails_when": "Decision is incomplete, confirmation is absent, or a write already occurred.", "irreversible": "Yes; requires completed decision, confirm autonomy, explicit confirmation, and zero prior writes."},
+    "issue_decision_letter": {"signature": "issue_decision_letter(claim_id: str, decision_record: object, decision_complete: bool)", "what": "Append at most one simulated decision record locally when the autonomy gate permits it.", "input": "CLM-* ID, structured final decision, and decision_complete=true; bad values are blocked.", "returns": "Written flag and gate result; <=8000 JSON characters.", "fails_when": "Claim or decision validation fails, hostile text is not safely escalated, suggest mode is active, confirm mode lacks confirmation, or a write already occurred.", "irreversible": "Yes; suggest blocks, confirm requires explicit confirmation, and act permits one valid write without additional confirmation; all modes enforce validation and at-most-once writing."},
 }
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,7 +86,7 @@ class _State:
 
 
 class ClaimAgent:
-    """One hand-written ReAct agent with a confirmation-gated local write."""
+    """One hand-written ReAct agent with an autonomy-gated local write."""
 
     def __init__(self, data_dir: Path | str = DATA_DIR, log_path: Path | str = DEFAULT_LOG,
                  backend: str = BACKEND, model: str = MODEL,
@@ -222,15 +222,16 @@ class ClaimAgent:
 
     def issue_decision_letter(self, claim_id: str, decision_record: dict[str, Any],
                               decision_complete: bool = False, *, state: _State) -> dict[str, Any]:
-        """Simulate issuance by one local JSONL append, and only after confirmation."""
+        """Append at most once when validation and the selected autonomy mode permit."""
         if not isinstance(claim_id, str) or not claim_id.startswith("CLM-"):
             return {"written": False, "gate_result": "blocked_invalid_claim_id"}
         if claim_id != state.case_id:
             return {"written": False, "gate_result": "blocked_claim_mismatch"}
         claim = self._find(self.tables["claims"], "claim_id", claim_id)
-        if (claim and self._hostile(claim.get("narrative", "")) and
+        if (claim and self._hostile(claim.get("narrative", "")) and not (
                 isinstance(decision_record, dict) and
-                decision_record.get("decision") != "escalate"):
+                decision_record.get("decision") == "escalate" and
+                decision_record.get("trigger") == "instruction_in_member_narrative")):
             # Narrative is untrusted data. Even a scripted/model attempt that
             # fabricates an approval is stopped at the irreversible boundary.
             state.decision = {
@@ -501,7 +502,7 @@ class ClaimAgent:
         if "issue_decision_letter" not in obs:
             action = {"tool": "issue_decision_letter", "arguments": {"claim_id": state.case_id,
                       "decision_record": state.decision, "decision_complete": True}}
-            return f'Thought: Decision is evidence-based; request the confirmation-gated simulated write.\nAction: {json.dumps(action)}'
+            return f'Thought: Decision is evidence-based; request the autonomy-gated simulated write.\nAction: {json.dumps(action)}'
         return f"Final: {state.decision['decision']} — {state.decision['reason']}"
 
     def run(self, claim_id: str, *, confirm: bool = False,

@@ -7,9 +7,11 @@ in `src/claim_agent.py` owns `Thought → Action → Observation → repeat → 
 no agent framework or sub-agent is used. Fixture and tool evidence is authoritative.
 
 The default `scripted` backend is deterministic and makes no network or paid model
-calls. `issue_decision_letter` is only a simulation: with explicit confirmation it
-appends one structured record to local `decision_records.jsonl`; otherwise the gate
-blocks the write. Do not use this demonstration with real insurance data.
+calls. `issue_decision_letter` is only a simulation: `suggest` blocks issuance,
+`confirm` requires explicit confirmation, and `act` permits one valid write without
+additional confirmation. Every mode still enforces claim and decision validation,
+hostile-text protection, and at-most-once writing. Do not use this demonstration
+with real insurance data.
 
 ## Exact reproduction
 
@@ -89,7 +91,7 @@ Its token values are reproducible approximations, not provider usage. The live
 
 ## D3 guardrail checklist
 
-Run the separate 13-case scripted checklist (including three hostile-text cases):
+Run the separate 14-case scripted checklist (including four hostile-text cases):
 
 ```bash
 PYTHONPATH=. python3 scripts/run_guardrail_checklist.py
