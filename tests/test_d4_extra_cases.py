@@ -98,8 +98,7 @@ class D4ExtraCaseTests(unittest.TestCase):
                           if item["prior_claim_id"] == "CLM-8801")
         self.assertFalse(comparison["exact_match"])
         self.assertEqual(["lines"], comparison["differing_fields"])
-        self.assertEqual((2, 1),
-                         (comparison["current_line_count"], comparison["prior_line_count"]))
+        self.assertEqual({"prior_claim_id", "exact_match", "matched_fields", "differing_fields"}, set(comparison))
 
     def test_added_hostile_case_uses_real_coverage(self):
         record = self.run_isolated("CLM-9035")

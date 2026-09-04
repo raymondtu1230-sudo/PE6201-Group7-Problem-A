@@ -1,23 +1,38 @@
 {
-  "measurement": "serialized JSON characters over all 50 claims",
+  "measurement": "serialized compact JSON characters and deterministic approximate tokens over all 50 claims",
   "profiles": [
     {
       "cases": 50,
       "descriptor_version": "v1",
-      "max_chars": 733,
-      "mean_chars": 435.24,
-      "min_chars": 319,
+      "exact": false,
+      "max_chars": 679,
+      "max_tokens_approx": 170,
+      "mean_chars": 404.3,
+      "mean_tokens_approx": 101.38,
+      "min_chars": 294,
+      "min_tokens_approx": 74,
+      "token_method": "ceil(UTF-8 serialized JSON bytes / 4)",
+      "tokenizer": "deterministic byte-ratio estimator",
       "tool": "get_claim",
-      "total_chars": 21762
+      "total_chars": 20215,
+      "total_tokens_approx": 5069
     },
     {
       "cases": 50,
       "descriptor_version": "v2",
-      "max_chars": 605,
-      "mean_chars": 409.64,
-      "min_chars": 319,
+      "exact": false,
+      "max_chars": 559,
+      "max_tokens_approx": 140,
+      "mean_chars": 380.3,
+      "mean_tokens_approx": 95.38,
+      "min_chars": 294,
+      "min_tokens_approx": 74,
+      "token_method": "ceil(UTF-8 serialized JSON bytes / 4)",
+      "tokenizer": "deterministic byte-ratio estimator",
       "tool": "get_claim",
-      "total_chars": 20482
+      "total_chars": 19015,
+      "total_tokens_approx": 4769
     }
-  ]
+  ],
+  "provider_tokens": "pending until controlled D5"
 }

@@ -49,3 +49,13 @@ Both `get_claim` shapes remain selectable with `descriptor_version=v1|v2` withou
 Parallel mode batches coverage lines and the independent hospital read after claim/policy, then batches independent required authorisations. It can waste a hospital call when later coverage requests a document or detects hostile content, and it removes the useful per-line stop/reconsider point. Sequential preserves those model decision points at additional turns/tokens.
 
 Over 70 trials (40 ordinary once, 10 negative three times), the committed scripted results report approximate token estimates including system/base text, the complete descriptor block, and accumulated history on every turn. Provider pricing is zero for the local planner, so estimated cost is `$0.00`. Live same-cheap-model v1/v2 and sequential/parallel provider-usage measurements remain pending for D5; actual provider usage must replace approximations then.
+
+## Pre-D5 descriptor evidence
+
+`results/d2/observation_profile.json` reports both serialized character size and the
+explicit deterministic approximation `ceil(UTF-8 compact-JSON bytes / 4)` for every
+v1/v2 `get_claim` result. This is an approximate byte-ratio method, not a provider
+tokenizer. `versioned_full_scorer.json` runs both versions through the unchanged D4
+`score_trial` contract over all 70 trials, and `descriptor_guardrails.json` compares the
+14 scripted guardrail cases for both versions. Exact provider token totals and a
+same-model live v1/v2 pass-rate comparison remain pending until controlled D5.

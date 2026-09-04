@@ -178,7 +178,7 @@ class D1SmokeTests(unittest.TestCase):
         long_near = records["CLM-8960"]["duplicate_assessment"][0]
         self.assertEqual("CLM-8726", long_near["prior_claim_id"])
         self.assertEqual(["lines"], long_near["differing_fields"])
-        self.assertEqual((4, 1), (long_near["current_line_count"], long_near["prior_line_count"]))
+        self.assertEqual({"prior_claim_id", "exact_match", "matched_fields", "differing_fields"}, set(long_near))
         self.assertEqual((4, 1990),
                          (len(records["CLM-8960"]["line_dispositions"]), records["CLM-8960"]["approved_total"]))
         self.assertEqual((170, 600),
