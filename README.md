@@ -1,6 +1,6 @@
 # PE6201 Assignment 2 — Group 7, Problem A
 
-This repository currently implements **D1, D2, and D3** plus the supplied **D4 evaluation-set data**:
+This repository currently implements **D1, D2, D3, and the deterministic D4 evaluation harness**:
 an offline, single-agent ReAct foundation for a health-insurance claim first
 response, together with 50 pre-labelled evaluation cases. The hand-written loop
 in `src/claim_agent.py` owns `Thought → Action → Observation → repeat → Final`;
@@ -43,14 +43,17 @@ jupyter nbconvert --to notebook --execute D1_AGENT_BUILD.ipynb \
   --output /tmp/D1_AGENT_BUILD.executed.ipynb
 ```
 
-## Evaluation-set data
+## D4 evaluation
 
 `make_fixtures_A.py` preserves all teacher-shipped rows and adds new rows only in
-the supplied `EXTRA_*` sections. Running it produces 50 isolated claims in
+the supplied `EXTRA_*` sections. The current frozen D4 set contains **50 cases:
+15 teacher-supplied cases plus 35 student-added cases**, satisfying the teacher's
+latest recommendation of **50+ total cases**. Running the fixture builder produces 50 isolated claims in
 `data_A/`. `expected_outcomes_A.json` contains one predeclared label per claim:
 40 `approve_in_principle` cases and 10 negative cases (`request_document` or
 `escalate`). Ordinary cases use one trial and negative cases use three, for 70
-scripted trials per model.
+scripted trials: 40 ordinary cases run once and 10 negative cases run three
+times (30 negative trials).
 
 The 35 additions are tagged as five reviewable batches A–E, seven cases per batch:
 
@@ -68,8 +71,20 @@ synthetic evaluation records.
 ## Scope
 
 The first 15 cases and their labels remain unchanged from the teacher's supplied
-materials. This repository now includes D2 and the deterministic D3 guardrail checklist, but does not claim a full D4 harness/results table, D5 live-model battery,
-D6 cost model, D7 reproduced failures, UI/deployment, or real letter delivery.
+materials. Generate the deterministic D4 results with:
+
+```bash
+PYTHONPATH=. python3 scripts/run_d4_evaluation.py --evaluation-date 2026-09-04
+```
+
+The result includes 70 code-scored scripted trials and a separate six-item human
+judgement queue. All six D4 judgement checks are approved, and the committed D4
+evidence reports `final_status` `complete` and `final_pass_rate` 1.0. Generated
+evidence identifies its scripted model, v2 prompt/descriptor, trial count and
+declared evaluation date. This scripted result is not a D5 live-model result;
+D5 live-model susceptibility testing has not been completed. This repository
+claims no UI/deployment, real claim decision, or real letter delivery. See
+`D4_EVALUATION.md` for scoring and evidence details.
 
 ## D2 tool-layer reproduction
 
@@ -101,5 +116,5 @@ PYTHONPATH=. python3 scripts/run_guardrail_checklist.py
 ```
 
 Its JSON evidence is saved under `results/d3/`. These 14 cases are not part of
-the 50 evaluation cases and do not claim D5 live-model susceptibility testing.
+the 50 D4 evaluation cases or its 70 scripted trials, and do not claim D5 live-model susceptibility testing.
 No network, model provider, or API key is used.
