@@ -1,6 +1,6 @@
 {
   "format_version": 2,
-  "baseline_commit": "0f588a781729c0ff386738d1ed447288bb88bf04",
+  "baseline_commit": "6b338e4dfcb77a87c58272a80530ff9faea41933",
   "files": {
     "data_A/claims.json": "53f16c1692261864bcb12bfaf73eeb6a9b96ff0ff97d19aa6f1d5db2324bf977",
     "data_A/decided_claims.json": "326263d37a5ffc694fff078a560e47cfc46f8702a808e4a6fe5f567117a66484",
@@ -12,18 +12,18 @@
     "data_A/required_documents.json": "359f34fb5e66138897ee77beb6130f991360780cfee02a5b3279171c9921c236",
     "make_fixtures_A.py": "626e491ddf1e9629a72fe436db2cb921595be458e0860bd228957551eaa9805d",
     "expected_outcomes_A.json": "ff36049ec16d016b44b9e59ee9c2ef0d493b93a420dfc3113b8f462113fea6c0",
-    "src/claim_agent.py": "ff944c1f70d78967b43344161ec043c22c3ddf86874be1872df96fb2d01f1117",
+    "src/claim_agent.py": "462ab0e9ac4962aac09a3778f2d0a34dfba1b3b9de3748eb1cfe777d96c9f0bc",
     "src/live_backend.py": "b0325431b3d269802eedbda890b39a63f4e90395fe1eabd6754b41600de4ecc0",
     "src/d4_evaluation.py": "40bf03a10c49b6a19f02cc9d44366bea240fd2ad5603955bf627fa7ec0ae42dd",
-    "scripts/run_d5_live.py": "75c02f629c6563d13eb8052ad631a5e5176288110f4f6a26d9bea84f826aa349",
-    "scripts/validate_d5_results.py": "d2265ed4b025ef113754cb74307c5148c36988ca2d70dbaaf94a03a5636cdc9f",
+    "scripts/run_d5_live.py": "eeb4b0515818f5f7995470e6499fede94b30bd9796bffbdd8757f962f7416b1e",
+    "scripts/validate_d5_results.py": "de6b2c11822a805cf57eb0b8e3e6d29edb1defa54d0c50ee8008e02e80efb16b",
     "scripts/aggregate_d5_results.py": "ede7de26bd2d60c07536d7fcc7b9832117967148b37e25f56f71c82ae339dd79",
     "scripts/create_d5_lock.py": "673cbdc703ed1b2eb555898c71f747e42711e7189545dbd20bf7b02a314a175b",
     "config/d5_jobs.json": "f38933afcfdeba45b4b33d07499d8c6e5a94cde2ccc0edb5b2047169627f44ee"
   },
   "prompts": {
-    "v1": "693db161f6eae954b72bfe8e2bd60fe88943ed782ede9edd7f15ce96782c38b4",
-    "v2": "d078829866d30bf5977315fef86ba33a6b9c5f8905fcbed98160af54131ba1d4"
+    "v1": "c8298c0c8fcb555484c2a0f10b65aeaa02f49fbe04b2869110ae5db2a1463e78",
+    "v2": "5e88a7adec6cee133cbc8693d07f33897b519f6186fcf2e0cee2c6a8114d1a17"
   },
   "schedule": "1df229e092ad9c655dc09c23a6e929386f17742b755210fb8ee6808f7067ba3d"
 }
