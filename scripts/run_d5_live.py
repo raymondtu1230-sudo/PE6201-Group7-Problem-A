@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from src.claim_agent import ClaimAgent, assert_decision_contract, normalize_action
+from src.live_backend import assert_live_message_contract
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
 D5_MAX_STEPS=8  # Scripted parallel evidence peaks at 6 calls; two turns are a controlled margin.
@@ -41,6 +42,9 @@ def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:
     # This exercises the declared fields, enums, mappings, canonical example,
     # normalizer and structural validator rather than searching prompt strings.
     assert_decision_contract()
+    # This is a zero-network quota guard: every paid run must replay the prior
+    # assistant Action and completed Observation as an actual chat sequence.
+    assert_live_message_contract()
     lock=json.loads(lock_path.read_text()); verified=verify_lock(lock)
     schedule=planned_runs()
     if len(schedule)!=MAX_NEW_RUNS_BOUND or len({x["run_id"] for x in schedule})!=len(schedule):
