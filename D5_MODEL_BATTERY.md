@@ -14,7 +14,9 @@ configuration, prompts/descriptors, or schedule blocks execution.
 
 ## Staged execution
 
-The default runner is a network-free preflight. Live use later requires `--backend
+The default runner prints the planned battery dimensions only; it does not verify the
+lock. Use `--preflight` with a job, output and baseline lock for the actual keyless,
+read-only validation. Live use later requires `--backend
 live`, `--confirm-live`, `--baseline-lock`, a job/output, `OPENROUTER_API_KEY`, and a
 positive bounded `--max-new-runs` value. The first invocation must use
 `--max-new-runs 1`. Inspect the retained trial, complete evidence, immutable job
@@ -26,6 +28,16 @@ Lock, configuration, schedule, and live-message protocol defects fail locally be
 the provider is called. Transport, authentication, provider/HTTP, or unusable paid
 response failures are recorded and stop the current command immediately with a nonzero
 status. Only a genuine unresolved pre-response transport failure may be retried later.
+Hitting either the per-run or job spending cap also stops the current command, after
+retaining any billed attempt. The cap uses returned usage: a request already in flight
+may cross the per-run threshold, so it is a stop threshold, not a provider-enforced
+guarantee on the final charge.
+
+Malformed model text is retained verbatim in the trace and scored as a model failure.
+A judged case without a decision record remains a failed, reviewable result; an absent
+reason does not invalidate the entire battery. Reviews cannot turn a code failure into
+a pass. The public decision contract declares the routing rules, trigger codes and
+missing-item formats for all models; the answer key is never included in model input.
 
 Cases remain sequential. “Parallel” means independent tool calls inside one ReAct
 turn. A fresh agent and temporary decision log are used per trial. Live `max_steps` is
@@ -48,7 +60,7 @@ Every member must privately set `OPENROUTER_API_KEY` in their own environment us
 their own key. Never paste its value into a command, result, notebook, chat, or Git file.
 
 ```bash
-# Zero-network preflight
+# Zero-network plan display (not a lock check)
 python3 scripts/run_d5_live.py
 
 # On clean merged main: generate, verify, then submit D5_LOCK.json as a lock-only commit
@@ -59,6 +71,18 @@ git add D5_LOCK.json && git commit -m "Lock D5 evaluation baseline"
 
 After the lock-only commit is merged, each assigned member runs only their job. The
 first retained trial is always one run:
+
+Before entering an API key, run the actual preflight against the intended directory
+(use a new directory for a changed baseline, and keep earlier paid evidence):
+
+```bash
+env -u OPENROUTER_API_KEY python3 scripts/run_d5_live.py --preflight --job 1 --output results/d5/job1-tu-weikang-r5 --baseline-lock D5_LOCK.json --max-new-runs 1
+```
+
+It validates the lock, schema, message roles, configuration, schedule and any existing
+job/result identity without constructing an agent or creating output files. All later
+commands must use that same chosen output directory; the paths below are examples for
+the five job identities, not instructions to reuse an obsolete baseline's results.
 
 ```bash
 # Job 1 — TU WEIKANG

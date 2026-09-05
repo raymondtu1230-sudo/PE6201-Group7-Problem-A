@@ -4,12 +4,12 @@
 
 D4 evaluates the existing hand-written, single-agent ReAct workflow offline. The
 current frozen set contains **50 cases: 15 teacher-supplied cases plus 35
-student-added cases**. The latest permitted range is **30–50 cases**, so 50 is the permitted upper limit. Ten cases are negative and the schedule contains **70 trials**. The additions remain grouped into batches A–E, with seven
+student-added cases**. The teacher's later announcement recommends **50+ total cases (35+ additions)** and takes precedence over the earlier brief's 30–50 range. Our 50-case set meets that recommendation. Ten cases are negative and the schedule contains **70 trials**. The additions remain grouped into batches A–E, with seven
 cases in each batch.
 
 The schedule contains 70 trials: 40 ordinary cases run once and 10 negative
 cases run three times (30 negative trials). This D4 set is distinct from D3's
-separate 14-case deterministic guardrail checklist.
+separate 15-case deterministic guardrail checklist.
 
 ## Reproduction and controls
 

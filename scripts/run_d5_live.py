@@ -95,13 +95,33 @@ def cost_evidence(usages:list[dict],model:str,pricing:dict)->tuple[float|None,st
 def job_manifest(job:dict,settings:dict,lock:dict,lock_hash:str)->dict:
     return {**job,"generation_settings":settings,"baseline_commit":lock["baseline_commit"],"lock_hash":lock_hash,
             "planned_case_count":50,"planned_trial_count":70,"started_at":datetime.now(timezone.utc).isoformat()}
-def ensure_manifest(output:Path,expected:dict)->dict:
+def ensure_manifest(output:Path,expected:dict,*,create:bool=True)->dict:
     path=output/"job_manifest.json"
     if path.exists():
         got=json.loads(path.read_text()); identity=("member","model","prompt_version","generation_settings","baseline_commit","lock_hash","planned_case_count","planned_trial_count")
         if any(got.get(k)!=expected.get(k) for k in identity): raise ValueError("output directory job manifest mismatch")
         return got
-    atomic_json(path,expected); return expected
+    if create: atomic_json(path,expected)
+    return expected
+
+def inspect_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int)->dict:
+    """The actual keyless, read-only preflight, shared with paid execution checks."""
+    config,job,info,rows=preflight_live_job(job_number=job_number,output=output,
+        lock_path=lock_path,max_new_runs=max_new_runs)
+    ensure_manifest(output,job_manifest(job,config["generation_settings"],info["lock"],
+        info["verified"]["lock_hash"]),create=False)
+    if not rows and max_new_runs!=1:
+        raise ValueError("an empty output directory requires the mandatory --max-new-runs 1 smoke test")
+    if rows:
+        from scripts.validate_d5_results import validate
+        validate(output,lock_path,allow_incomplete=True)
+    attempted={row["run_id"] for row in rows}
+    remaining=[item for item in planned_runs() if item["run_id"] not in attempted]
+    return {"mode":"preflight","valid":True,"network_requests":0,**info["verified"],
+        **job,"output":str(output),"existing_attempts":len(rows),
+        "remaining_unattempted_trials":len(remaining),"max_new_runs":max_new_runs,
+        "next_run_id":remaining[0]["run_id"] if remaining else None,
+        "live_max_steps":D5_MAX_STEPS}
 def rebuild_reviews(output:Path,rows:list[dict],labels:dict[str,dict])->None:
     judged={x["case_id"]:x for x in rows if x.get("transport_status")=="model_response" and labels[x["case_id"]].get("grading_method","code")=="judged"}
     queue=[{"run_id":r["run_id"],"case_id":cid,"review_criterion":labels[cid].get("note"),"must_record":labels[cid]["must_record"],
@@ -175,11 +195,22 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
         rows.append(row); rebuild_reviews(output,rows,labelmap); count+=1
         if transport_failure: write_summary(output,rows,labelmap,"transport_failure"); return 2
         if result.halt_reason == "paid_malformed_response": write_summary(output,rows,labelmap,"paid_malformed_response"); return 3
+        if result.halt_reason == "budget_cap": write_summary(output,rows,labelmap,"run_budget_cap"); return 4
     rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap)
     return 0
 def main()->None:
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--job",type=int,choices=range(1,6)); p.add_argument("--output",type=Path); p.add_argument("--backend",default="scripted",choices=("scripted","live")); p.add_argument("--confirm-live",action="store_true"); p.add_argument("--baseline-lock",type=Path); p.add_argument("--max-new-runs",type=int); p.add_argument("--retry-run-id")
+    p.add_argument("--preflight",action="store_true",help="validate a job, lock and output without a key, network or writes")
     a=p.parse_args()
+    if a.preflight:
+        if None in (a.job,a.output,a.baseline_lock):
+            raise SystemExit("preflight requires --job, --output and --baseline-lock")
+        try:
+            print(json.dumps(inspect_live_job(job_number=a.job,output=a.output,
+                lock_path=a.baseline_lock,max_new_runs=1 if a.max_new_runs is None else a.max_new_runs),indent=2))
+        except (ValueError,OSError,json.JSONDecodeError) as exc:
+            raise SystemExit(f"preflight refused: {exc}")
+        return
     if a.backend!="live": print(json.dumps({"mode":"dry-run","network_requests":0,"cases":50,"trials_per_job":70,"jobs":5,"live_max_steps":D5_MAX_STEPS},indent=2)); return
     if not a.confirm_live or not os.environ.get("OPENROUTER_API_KEY"): raise SystemExit("live execution refused: explicit confirmation and OPENROUTER_API_KEY are required")
     if None in (a.job,a.output,a.baseline_lock,a.max_new_runs): raise SystemExit("live execution requires --job, --output, --baseline-lock, and --max-new-runs")
