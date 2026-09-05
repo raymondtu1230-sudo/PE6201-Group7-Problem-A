@@ -1,11 +1,12 @@
 import json
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.claim_agent import ClaimAgent
+from src.claim_agent import ClaimAgent, _State
 from src.live_backend import (assert_live_message_contract, build_live_messages,
                               call_live_model)
 from scripts import run_d5_live as runner
@@ -180,6 +181,93 @@ class LiveConversationTests(unittest.TestCase):
         self.assertEqual(len(requests), 4)
         self.assertEqual([x["role"] for x in requests[1]],
                          ["system", "user", "assistant", "user"])
+
+    def test_one_then_four_runs_cover_five_distinct_cases_through_live_protocol(self):
+        requests = []
+        first_requests = []
+
+        def replay_state(messages):
+            self.assertEqual([item["role"] for item in messages[:2]],
+                             ["system", "user"])
+            task = json.loads(messages[1]["content"].split("\n", 1)[1])
+            case_id = task["request"]["claim_id"]
+            state = _State(case_id=case_id, autonomy="confirm", confirmed=True)
+            for index, message in enumerate(messages[2:], start=2):
+                expected_role = "assistant" if index % 2 == 0 else "user"
+                self.assertEqual(message["role"], expected_role)
+                content = message["content"]
+                if message["role"] == "assistant":
+                    thought = re.search(r"Thought:\s*(.*)", content)
+                    if thought:
+                        state.trace.append({"Thought": thought.group(1)})
+                    if "Action:" in content:
+                        state.trace.append(
+                            {"Action": content.split("Action:", 1)[1].strip()})
+                    continue
+                self.assertTrue(content.startswith("Observation:"))
+                value = json.loads(content.split("\n", 1)[1])
+                for observation in value if isinstance(value, list) else [value]:
+                    state.trace.append({"Observation": observation})
+                    if isinstance(observation, dict) and "result" in observation:
+                        state.observations.setdefault(observation["tool"], []).append(
+                            observation["result"])
+            return task, state
+
+        def transport(request, timeout):
+            self.assertEqual(timeout, 120)
+            body = json.loads(request.data.decode())
+            task, state = replay_state(body["messages"])
+            case_id = task["request"]["claim_id"]
+            requests.append(case_id)
+            if not state.trace:
+                first_requests.append(case_id)
+                self.assertEqual(len(body["messages"]), 2)
+            if "issue_decision_letter" in state.observations:
+                text = "Final: completed"
+            else:
+                planner = ClaimAgent(
+                    backend="scripted",
+                    descriptor_version=task["descriptor_version"],
+                    execution_mode="parallel",
+                )
+                text = planner.call_model(state)
+            return _HTTPResponse(text, f"five-case-{len(requests)}")
+
+        def live_caller(**kwargs):
+            return call_live_model(**kwargs, transport=transport)
+
+        class ExactLiveFactory:
+            def __new__(cls, **kwargs):
+                kwargs["live_caller"] = live_caller
+                return ClaimAgent(**kwargs)
+
+        expected = runner.planned_runs()[:5]
+        expected_cases = [item["case_id"] for item in expected]
+        verified = {"valid": True, "lock_hash": "five-case-current-tree"}
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}), \
+                patch("scripts.run_d5_live.verify_lock", return_value=verified), \
+                patch("urllib.request.urlopen",
+                      side_effect=AssertionError("network must not be used")):
+            output = Path(tmp) / "one-then-four"
+            first = runner.run_live_job(
+                job_number=1, output=output, lock_path=Path("D5_LOCK.json"),
+                max_new_runs=1, agent_factory=ExactLiveFactory)
+            second = runner.run_live_job(
+                job_number=1, output=output, lock_path=Path("D5_LOCK.json"),
+                max_new_runs=4, agent_factory=ExactLiveFactory)
+            rows = [json.loads(line) for line in
+                    (output / "trials.jsonl").read_text().splitlines()]
+
+        self.assertEqual((first, second), (0, 0))
+        self.assertEqual(first_requests, expected_cases)
+        self.assertEqual([row["case_id"] for row in rows], expected_cases)
+        self.assertEqual(len({row["run_id"] for row in rows}), 5)
+        self.assertTrue(all(row["automatic_pass"] for row in rows))
+        self.assertTrue(all(row["halt_reason"] == "final" for row in rows))
+        self.assertTrue(all(row["write_count"] == 1 for row in rows))
+        self.assertTrue(all(len(row["provider_usage"]) == row["model_calls"]
+                            for row in rows))
 
     def test_runtime_contract_check_is_network_free(self):
         with patch("urllib.request.urlopen",
