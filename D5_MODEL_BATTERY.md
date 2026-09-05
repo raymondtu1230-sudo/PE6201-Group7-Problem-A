@@ -20,13 +20,12 @@ positive bounded `--max-new-runs` value. The first invocation must use
 `--max-new-runs 1`. Inspect the retained trial, complete evidence, immutable job
 manifest, and incomplete validation output. Then resume from the identical lock and
 output directory with a bounded continuation count. Completed model responses are
-never rerun; malformed or wrong responses are honest completed trials. By default,
-the paid runner retains the first automatic scoring failure and then exits with code
-5 before issuing any later request in that batch. The same directory remains blocked
-on later invocations until the operator explicitly opts in after inspection. A transport,
-authentication, provider, HTTP, configuration, or response-transport failure is
-recorded and stops the command immediately with a nonzero status. Only that unresolved
-stable run ID may be retried later.
+never rerun. An automatic scoring failure is valid experimental evidence of model
+behaviour: it is retained and the bounded batch continues to later scheduled trials.
+Lock, configuration, schedule, and live-message protocol defects fail locally before
+the provider is called. Transport, authentication, provider/HTTP, or unusable paid
+response failures are recorded and stop the current command immediately with a nonzero
+status. Only a genuine unresolved pre-response transport failure may be retried later.
 
 Cases remain sequential. “Parallel” means independent tool calls inside one ReAct
 turn. A fresh agent and temporary decision log are used per trial. Live `max_steps` is
@@ -82,22 +81,23 @@ python3 scripts/validate_d5_results.py results/d5/job5-huang-yihan --lock D5_LOC
 Only after inspecting each retained smoke result, resume its same directory with a
 bounded continuation (69 is the maximum remaining after one successful response).
 
-An optional five-case burn-in can first add four trials. It remains fail-fast, so the
-first automatic failure stops the command before any later request:
+An optional five-case burn-in can first add four trials. All four are retained even if
+one or more model answers fail automatic scoring; those failures are part of the model
+evaluation. Afterward, inspect whether failures are ordinary case-specific model errors
+or a suspicious identical execution pattern before starting the remaining trials:
 
 ```bash
 python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 4
 ```
 
-After the smoke or burn-in is reviewed, a complete evaluation must explicitly opt in
-to retaining model failures and continuing the remaining scheduled trials:
+After the smoke or burn-in is reviewed, continue the remaining scheduled trials:
 
 ```bash
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 69 --continue-on-automatic-failure
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 2 --output results/d5/job2-chen-ke --max-new-runs 69 --continue-on-automatic-failure
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 3 --output results/d5/job3-kang-xingyao --max-new-runs 69 --continue-on-automatic-failure
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 4 --output results/d5/job4-yao-fangxuan --max-new-runs 69 --continue-on-automatic-failure
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 5 --output results/d5/job5-huang-yihan --max-new-runs 69 --continue-on-automatic-failure
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 69
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 2 --output results/d5/job2-chen-ke --max-new-runs 69
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 3 --output results/d5/job3-kang-xingyao --max-new-runs 69
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 4 --output results/d5/job4-yao-fangxuan --max-new-runs 69
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 5 --output results/d5/job5-huang-yihan --max-new-runs 69
 ```
 
 Normal resume skips every run ID already written, including transport failures and

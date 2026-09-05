@@ -78,7 +78,7 @@ class D5RunnerContracts(unittest.TestCase):
             with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
                 self.assertEqual(runner.run_live_job(job_number=1,output=d/"out",lock_path=d/"lock.json",max_new_runs=1,agent_factory=CountingFactory),4)
             self.assertEqual(calls,[])
-    def test_automatic_failure_stops_paid_batch_unless_explicitly_overridden(self):
+    def test_automatic_failures_are_retained_and_batch_continues(self):
         calls=[]
         class AutomaticFailureFactory:
             def __new__(cls,**kwargs):
@@ -100,23 +100,17 @@ class D5RunnerContracts(unittest.TestCase):
                 code=runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
                     max_new_runs=4,agent_factory=AutomaticFailureFactory)
             rows=[json.loads(x) for x in (d/"out/trials.jsonl").read_text().splitlines()]
-            self.assertEqual((code,len(calls),len(rows)),(5,1,2))
-            self.assertFalse(rows[-1]["automatic_pass"])
+            self.assertEqual((code,len(calls),len(rows)),(0,4,5))
+            self.assertTrue(all(not row["automatic_pass"] for row in rows[1:]))
             self.assertEqual(json.loads((d/"out/summary.json").read_text())["status"],
-                             "automatic_failure")
-            before=len(calls)
-            with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
-                with self.assertRaisesRegex(ValueError,"output contains an automatic failure"):
-                    runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
-                        max_new_runs=1,agent_factory=AutomaticFailureFactory)
-            self.assertEqual(len(calls),before)
+                             "incomplete")
             with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
                 code=runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
-                    max_new_runs=2,continue_on_automatic_failure=True,
+                    max_new_runs=1,
                     agent_factory=AutomaticFailureFactory)
             rows=[json.loads(x) for x in (d/"out/trials.jsonl").read_text().splitlines()]
-            self.assertEqual((code,len(calls),len(rows)),(0,3,4))
-    def test_fail_fast_covers_every_position_in_five_case_burn_in(self):
+            self.assertEqual((code,len(calls),len(rows)),(0,5,6))
+    def test_one_model_failure_at_any_later_position_does_not_block_five_cases(self):
         for fail_at in range(1,5):
             with self.subTest(fail_at=fail_at), tempfile.TemporaryDirectory() as t:
                 d=Path(t); _,lp=self.run_one(d); attempts=[]
@@ -139,8 +133,32 @@ class D5RunnerContracts(unittest.TestCase):
                 with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
                     code=runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
                         max_new_runs=4,agent_factory=MixedFactory)
-                rows=(d/"out/trials.jsonl").read_text().splitlines()
-                self.assertEqual((code,len(attempts),len(rows)),(5,fail_at,1+fail_at))
+                rows=[json.loads(x) for x in
+                      (d/"out/trials.jsonl").read_text().splitlines()]
+                self.assertEqual((code,len(attempts),len(rows)),(0,4,5))
+                self.assertEqual(sum(not row["automatic_pass"] for row in rows),1)
+                self.assertEqual(len({row["run_id"] for row in rows}),5)
+    def test_transport_failure_at_any_later_position_stops_five_case_batch(self):
+        for fail_at in range(1,5):
+            with self.subTest(fail_at=fail_at), tempfile.TemporaryDirectory() as t:
+                d=Path(t); _,lp=self.run_one(d); attempts=[]
+                lock=json.loads(lp.read_text())
+                class MixedFactory:
+                    def __new__(cls,**kwargs):
+                        attempts.append(len(attempts)+1)
+                        if len(attempts)==fail_at:
+                            return FailureFactory(**kwargs)
+                        return OfflineFactory(**kwargs)
+                with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
+                    code=runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
+                        max_new_runs=4,agent_factory=MixedFactory)
+                rows=[json.loads(x) for x in
+                      (d/"out/trials.jsonl").read_text().splitlines()]
+                self.assertEqual((code,len(attempts),len(rows)),
+                                 (2,fail_at,1+fail_at))
+                self.assertEqual(rows[-1]["transport_status"],"transport_failure")
+                self.assertEqual(json.loads((d/"out/summary.json").read_text())["status"],
+                                 "transport_failure")
     def test_partial_paid_transport_failure_requires_explicit_retry(self):
         claims=[]
         class PartialFactory:
@@ -176,12 +194,8 @@ class D5RunnerContracts(unittest.TestCase):
             lock=json.loads(lp.read_text())
             with patch("scripts.validate_d5_results.verify_lock",return_value={"lock_hash":canonical(lock)}): self.assertEqual(validate(d/"out",lp,allow_incomplete=True)["trials"],1)
             with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
-                with self.assertRaisesRegex(ValueError,"output contains an automatic failure"):
-                    runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,max_new_runs=1,agent_factory=PaidFactory)
-            self.assertEqual(len(requests),1)
-            with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
-                self.assertEqual(runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,max_new_runs=1,
-                    continue_on_automatic_failure=True,agent_factory=PaidFactory),3)
+                self.assertEqual(runner.run_live_job(job_number=1,output=d/"out",lock_path=lp,
+                    max_new_runs=1,agent_factory=PaidFactory),3)
             rows=[json.loads(x) for x in (d/"out/trials.jsonl").read_text().splitlines()]; self.assertEqual(sum(x["run_id"]==first["run_id"] for x in rows),1); self.assertEqual(len(requests),2)
     def test_all_http_success_malformed_shapes_are_paid_failures(self):
         payloads=[{"choices":[{"message":{"content":None}}]},{"choices":[{"message":{"content":""}}]},{"choices":[{}]},{"choices":[]},{},[],{"choices":[{"message":{"content":"Final: x"}}],"usage":{"prompt_tokens":1}}]
