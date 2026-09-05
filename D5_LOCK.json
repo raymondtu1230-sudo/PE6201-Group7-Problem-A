@@ -1,6 +1,6 @@
 {
   "format_version": 2,
-  "baseline_commit": "1a101d3a9c30401bd2354032aaeae6f418f6dbca",
+  "baseline_commit": "77940bd3e99f1c0adcab5b43596446c71ce06c57",
   "files": {
     "data_A/claims.json": "53f16c1692261864bcb12bfaf73eeb6a9b96ff0ff97d19aa6f1d5db2324bf977",
     "data_A/decided_claims.json": "326263d37a5ffc694fff078a560e47cfc46f8702a808e4a6fe5f567117a66484",
@@ -12,18 +12,18 @@
     "data_A/required_documents.json": "359f34fb5e66138897ee77beb6130f991360780cfee02a5b3279171c9921c236",
     "make_fixtures_A.py": "626e491ddf1e9629a72fe436db2cb921595be458e0860bd228957551eaa9805d",
     "expected_outcomes_A.json": "ff36049ec16d016b44b9e59ee9c2ef0d493b93a420dfc3113b8f462113fea6c0",
-    "src/claim_agent.py": "7e007de3e91968e3178ca8c65457e6ebf2affb26e4fc404993d4cb7c8fa03426",
+    "src/claim_agent.py": "1bec3fd4d99fb378212da412b9a44f374b22af019cd53fe55ddaaeab24b341bd",
     "src/live_backend.py": "c46a699d6252c830fa71e723afff3877855e3ad49c02390b8ed6d0e6c1367694",
     "src/d4_evaluation.py": "40bf03a10c49b6a19f02cc9d44366bea240fd2ad5603955bf627fa7ec0ae42dd",
-    "scripts/run_d5_live.py": "5ae0e75791b0d671014a76cfee6859e9e349cf66e14b67b7da9287182c76bc0d",
+    "scripts/run_d5_live.py": "5c131e9e752f117f74d9dc8941196c2c442f8f07eea19ddc31e797b7bdcd24d0",
     "scripts/validate_d5_results.py": "d2265ed4b025ef113754cb74307c5148c36988ca2d70dbaaf94a03a5636cdc9f",
     "scripts/aggregate_d5_results.py": "ede7de26bd2d60c07536d7fcc7b9832117967148b37e25f56f71c82ae339dd79",
     "scripts/create_d5_lock.py": "673cbdc703ed1b2eb555898c71f747e42711e7189545dbd20bf7b02a314a175b",
     "config/d5_jobs.json": "f38933afcfdeba45b4b33d07499d8c6e5a94cde2ccc0edb5b2047169627f44ee"
   },
   "prompts": {
-    "v1": "7b6e59bcecbdbf08497662d73e10fa7ea9c44afdc55850b8e2119ec17134823a",
-    "v2": "db56b74f822be3b3f9b94cc1353a5bea6484e97a6c064be45c42e45dd14bb8e0"
+    "v1": "5456bd5cad67657abcab1ad8689bd086234bae98d646c3240f906e855e687109",
+    "v2": "55e3aea070a735be9f9ca5f0a0aeb96d882b386e9546e7e8ab08951cec12f652"
   },
   "schedule": "1df229e092ad9c655dc09c23a6e929386f17742b755210fb8ee6808f7067ba3d"
 }
