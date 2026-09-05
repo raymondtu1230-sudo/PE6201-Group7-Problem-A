@@ -127,7 +127,8 @@ def write_summary(output:Path,rows:list[dict],labels:dict[str,dict],status_hint:
         "negative_pass_rate":sum(x[1] for x in negatives)/30 if complete else None,
         "judgements_pending":pending,"cost_evidence_missing":cost_missing})
 def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
-                 retry_run_id:str|None=None,agent_factory=ClaimAgent)->int:
+                 retry_run_id:str|None=None,continue_on_automatic_failure:bool=False,
+                 agent_factory=ClaimAgent)->int:
     config,job,lock_info,rows=preflight_live_job(job_number=job_number,output=output,
         lock_path=lock_path,max_new_runs=max_new_runs)
     lock,verified=lock_info["lock"],lock_info["verified"]; settings=config["generation_settings"]
@@ -139,6 +140,9 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
     completed=[x for x in rows if x.get("transport_status")=="model_response"]
     completed_ids=[x["run_id"] for x in completed]
     if len(completed_ids)!=len(set(completed_ids)): raise ValueError("duplicate completed model-response row")
+    prior_automatic_failures=[x for x in completed if x.get("automatic_pass") is False]
+    if prior_automatic_failures and not continue_on_automatic_failure:
+        raise ValueError("output contains an automatic failure; inspect it before explicitly continuing")
     attempted_ids={x["run_id"] for x in rows}
     labels,facts=load_labels(); labelmap={x["case_id"]:x for x in labels}; claims={x["claim_id"]:x for x in facts["claims"]}
     schedule=planned_runs()
@@ -175,15 +179,21 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
         rows.append(row); rebuild_reviews(output,rows,labelmap); count+=1
         if transport_failure: write_summary(output,rows,labelmap,"transport_failure"); return 2
         if result.halt_reason == "paid_malformed_response": write_summary(output,rows,labelmap,"paid_malformed_response"); return 3
+        # A live automatic failure can expose a systematic prompt, protocol or
+        # integration defect. Preserve its paid evidence, then stop before a
+        # batch can repeat the same charge. Completing an evaluation after a
+        # reviewed smoke/burn-in requires an explicit opt-in.
+        if not score["passed"] and not continue_on_automatic_failure:
+            write_summary(output,rows,labelmap,"automatic_failure"); return 5
     rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap)
     return 0
 def main()->None:
-    p=argparse.ArgumentParser(description=__doc__); p.add_argument("--job",type=int,choices=range(1,6)); p.add_argument("--output",type=Path); p.add_argument("--backend",default="scripted",choices=("scripted","live")); p.add_argument("--confirm-live",action="store_true"); p.add_argument("--baseline-lock",type=Path); p.add_argument("--max-new-runs",type=int); p.add_argument("--retry-run-id")
+    p=argparse.ArgumentParser(description=__doc__); p.add_argument("--job",type=int,choices=range(1,6)); p.add_argument("--output",type=Path); p.add_argument("--backend",default="scripted",choices=("scripted","live")); p.add_argument("--confirm-live",action="store_true"); p.add_argument("--baseline-lock",type=Path); p.add_argument("--max-new-runs",type=int); p.add_argument("--retry-run-id"); p.add_argument("--continue-on-automatic-failure",action="store_true",help="after reviewed smoke/burn-in, retain automatic failures and continue the evaluation batch")
     a=p.parse_args()
     if a.backend!="live": print(json.dumps({"mode":"dry-run","network_requests":0,"cases":50,"trials_per_job":70,"jobs":5,"live_max_steps":D5_MAX_STEPS},indent=2)); return
     if not a.confirm_live or not os.environ.get("OPENROUTER_API_KEY"): raise SystemExit("live execution refused: explicit confirmation and OPENROUTER_API_KEY are required")
     if None in (a.job,a.output,a.baseline_lock,a.max_new_runs): raise SystemExit("live execution requires --job, --output, --baseline-lock, and --max-new-runs")
-    try: code=run_live_job(job_number=a.job,output=a.output,lock_path=a.baseline_lock,max_new_runs=a.max_new_runs,retry_run_id=a.retry_run_id)
+    try: code=run_live_job(job_number=a.job,output=a.output,lock_path=a.baseline_lock,max_new_runs=a.max_new_runs,retry_run_id=a.retry_run_id,continue_on_automatic_failure=a.continue_on_automatic_failure)
     except (ValueError,OSError,json.JSONDecodeError) as exc: raise SystemExit(f"live execution refused: {exc}")
     raise SystemExit(code)
 if __name__=="__main__": main()
