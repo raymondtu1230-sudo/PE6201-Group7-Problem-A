@@ -97,11 +97,36 @@ duplicate_claim stop before line pricing and therefore require line_dispositions
 escalation is different: evaluate and price every line under authoritative coverage first. All other
 fully evaluated outcomes require exactly one disposition per claim line. Totals must reconcile. Use issue_decision_letter with
 decision_complete=true at most once. Return Final only after that gated write attempt.
+Every Action tool call must use the standard JSON format
+{"tool":"get_claim","arguments":{"claim_id":"CLM-EXAMPLE"}}.
 Return exactly either:\nThought: <brief task reasoning>\nAction: <one JSON tool-call object or a JSON list of independent tool-call objects>\nor:\nFinal: <outcome>"""
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data_A"
 DEFAULT_LOG = ROOT / "decision_records.jsonl"
+
+
+def normalize_action(action_text: str) -> list[dict[str, Any]]:
+    """Parse Action JSON and normalize only unambiguous single-key shorthand."""
+    try:
+        value = json.loads(action_text)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ValueError("malformed_action") from exc
+    calls = value if isinstance(value, list) else [value]
+    if not calls or not all(isinstance(call, dict) for call in calls):
+        raise ValueError("malformed_action")
+    normalized = []
+    for call in calls:
+        if "tool" in call or "arguments" in call:
+            normalized.append(call)
+            continue
+        if len(call) != 1:
+            raise ValueError("malformed_action")
+        name, arguments = next(iter(call.items()))
+        if not isinstance(name, str) or not isinstance(arguments, dict):
+            raise ValueError("malformed_action")
+        normalized.append({"tool": name, "arguments": arguments})
+    return normalized
 
 
 @dataclass
@@ -356,14 +381,10 @@ class ClaimAgent:
     def execute_action_block(self, action_text: str, state: _State) -> bool:
         """Parse one JSON object or list and execute every valid, novel call."""
         try:
-            calls = json.loads(action_text)
-        except (json.JSONDecodeError, TypeError):
+            calls = normalize_action(action_text)
+        except ValueError:
             state.halt_reason = "malformed_action"
             state.trace.append({"Observation": {"error": "malformed_action"}})
-            return False
-        calls = calls if isinstance(calls, list) else [calls]
-        if not calls or not all(isinstance(x, dict) for x in calls):
-            state.halt_reason = "malformed_action"
             return False
         pending = []
         for call in calls:

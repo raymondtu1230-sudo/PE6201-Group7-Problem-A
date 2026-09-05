@@ -6,7 +6,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
-from src.claim_agent import ClaimAgent
+from src.claim_agent import ClaimAgent,normalize_action
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
 D5_MAX_STEPS=8  # Scripted parallel evidence peaks at 6 calls; two turns are a controlled margin.
@@ -32,8 +32,8 @@ def tool_order(trace:list[dict])->list[str]:
     order=[]
     for event in trace:
         if "Action" not in event: continue
-        try: calls=json.loads(event["Action"]); calls=calls if isinstance(calls,list) else [calls]
-        except (TypeError,json.JSONDecodeError): continue
+        try: calls=normalize_action(event["Action"])
+        except ValueError: continue
         order.extend(x.get("tool") for x in calls if isinstance(x,dict) and isinstance(x.get("tool"),str))
     return order
 def complete_provider_usage(item:dict)->bool:

@@ -177,6 +177,21 @@ class D5RunnerContracts(unittest.TestCase):
         def live(**kwargs): calls.append(1); return __import__('src.live_backend',fromlist=['LiveResponse']).LiveResponse('Thought: read\nAction: {"tool":"get_claim","arguments":{"claim_id":"CLM-8842"}}',{"prompt_tokens":1,"completion_tokens":1,"cost":.04},0)
         result=ClaimAgent(backend="live",live_caller=live,budget_usd=.035).run("CLM-8842",confirm=True)
         self.assertEqual((len(calls),result.halt_reason,result.tool_calls),(1,"budget_cap",0))
+    def test_gpt5_mini_single_key_action_is_executed_and_recorded(self):
+        response = ('Thought: Fetch the claim to see member, lines, dates and duplicate evidence '
+                    'before any coverage or policy checks.\n'
+                    'Action: {"get_claim": {"claim_id": "CLM-8842"}}')
+        agent=ClaimAgent(scripted_responses=[response,"Final: claim fetched"])
+        result=agent.run("CLM-8842",confirm=True)
+        self.assertEqual(result.tool_calls,1)
+        self.assertEqual(runner.tool_order(result.trace),["get_claim"])
+        self.assertTrue(result.trace[-2]["Observation"]["result"]["found"])
+    def test_ambiguous_multi_key_shorthand_is_malformed(self):
+        response=('Thought: ambiguous\nAction: '
+                  '{"get_claim":{"claim_id":"CLM-8842"},"lookup_policy":{"member_id":"M-1"}}')
+        result=ClaimAgent(scripted_responses=[response]).run("CLM-8842",confirm=True)
+        self.assertEqual((result.halt_reason,result.tool_calls),("malformed_action",0))
+        self.assertEqual(runner.tool_order(result.trace),[])
     def test_battery_structure(self):
         config=json.loads((runner.ROOT/"config/d5_jobs.json").read_text()); runner.validate_battery_config(config)
         v2=[x for x in config["jobs"] if x["prompt_version"]=="v2"]; v1=[x for x in config["jobs"] if x["prompt_version"]=="v1"]
