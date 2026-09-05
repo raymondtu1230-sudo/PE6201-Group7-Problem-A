@@ -15,10 +15,21 @@ class D3GuardrailTests(unittest.TestCase):
         return ClaimAgent(log_path=Path(directory) / "records.jsonl", **kwargs)
 
     @staticmethod
-    def valid(decision="approve_in_principle", trigger=None):
-        record = {"decision": decision, "reason": "scripted evidence", "evidence_trail": []}
+    def valid(decision="approve_in_principle", trigger=None, case_id="CLM-8842"):
+        with tempfile.TemporaryDirectory() as tmp:
+            record = ClaimAgent(log_path=Path(tmp) / "seed", max_steps=20).run(case_id, confirm=True).decision_record
+        record = dict(record)
+        record.update(decision=decision, reason="scripted evidence")
         if decision == "escalate":
             record.update(trigger=trigger, escalate_to="human claims assessor")
+            record.pop("hospital_status", None)
+        elif decision == "request_document":
+            record.pop("hospital_status", None)
+        else:
+            hospital = next(x["result"]["hospital"] for x in record["evidence_trail"]
+                            if x.get("tool") == "get_hospital_status")
+            record["hospital_status"] = {"hospital_id": hospital["hospital_id"],
+                                         "panel": hospital["panel"]}
         return record
 
     def test_exact_step_cap_boundary_processes_one_response(self):
@@ -127,36 +138,38 @@ class D3GuardrailTests(unittest.TestCase):
                 state = _State("CLM-8842", "act", False, decision=record)
                 result = agent.issue_decision_letter(
                     "CLM-8842", record, True, state=state)
-                self.assertEqual("blocked_incomplete_decision", result["gate_result"])
+                self.assertEqual("blocked_invalid_decision_record", result["gate_result"])
                 self.assertEqual(0, state.write_count)
                 self.assertFalse(path.exists())
 
     def test_hostile_unsafe_variants_are_routed_and_not_written(self):
-        variants = [self.valid(), self.valid("escalate", None), self.valid("escalate", "wrong")]
+        variants = [self.valid(case_id="CLM-8941"), self.valid("escalate", None, "CLM-8941"), self.valid("escalate", "wrong", "CLM-8941")]
         for record in variants:
             with self.subTest(record=record), tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "records.jsonl"; agent = ClaimAgent(log_path=path)
                 state = _State("CLM-8941", "act", False, decision=record)
                 result = agent.issue_decision_letter("CLM-8941", record, True, state=state)
-                self.assertEqual("blocked_hostile_instruction", result["gate_result"])
-                self.assertEqual((0, "escalate", "instruction_in_member_narrative"),
-                                 (state.write_count, state.decision["decision"], state.decision["trigger"]))
+                expected = ("blocked_invalid_decision_record" if
+                            record.get("decision") == "escalate" and not record.get("trigger")
+                            else "blocked_hostile_instruction")
+                self.assertEqual(expected, result["gate_result"])
+                self.assertEqual(0, state.write_count)
+                self.assertEqual(record, state.decision)
                 self.assertFalse(path.exists())
 
     def test_hostile_incorrect_valid_trigger_unresolved_records_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "records.jsonl"; agent = ClaimAgent(log_path=path)
-            record = self.valid("escalate", "unresolved_records")
+            record = self.valid("escalate", "unresolved_records", "CLM-8941")
             state = _State("CLM-8941", "act", False, decision=record)
             result = agent.issue_decision_letter("CLM-8941", record, True, state=state)
             self.assertEqual("blocked_hostile_instruction", result["gate_result"])
-            self.assertEqual((0, "escalate", "instruction_in_member_narrative"),
-                             (state.write_count, state.decision["decision"], state.decision["trigger"]))
+            self.assertEqual(record, state.decision)
             self.assertFalse(path.exists())
 
     def test_valid_hostile_exact_escalation_may_write(self):
         with tempfile.TemporaryDirectory() as tmp:
-            agent = self.make_agent(tmp); record = self.valid("escalate", "instruction_in_member_narrative")
+            agent = self.make_agent(tmp); record = self.valid("escalate", "instruction_in_member_narrative", "CLM-8941")
             state = _State("CLM-8941", "act", False, decision=record)
             result = agent.issue_decision_letter("CLM-8941", record, True, state=state)
         self.assertTrue(result["written"])
