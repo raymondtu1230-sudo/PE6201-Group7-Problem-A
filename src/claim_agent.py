@@ -549,7 +549,8 @@ class ClaimAgent:
         state.decision = canonical
         decision = canonical["decision"]
         # Re-read authoritative data at the irreversible boundary. Unsafe attempts
-        # are routed in memory, but never touch the append-only file.
+        # are blocked without changing the candidate or append-only file; the normal
+        # planner constructs the exact safe escalation before reaching this gate.
         if self._hostile(claim.get("narrative", "")) and not (
                 decision == "escalate" and
                 decision_record.get("trigger") == "instruction_in_member_narrative"):

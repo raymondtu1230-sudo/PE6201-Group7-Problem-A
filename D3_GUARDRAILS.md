@@ -40,8 +40,10 @@ The authoritative narrative is retrieved at write time and checked with narrow
 instruction/tool-imitation markers. If hostile, writing is allowed only for
 `decision == "escalate"` with the exact trigger
 `instruction_in_member_narrative`. Every other outcome or trigger is blocked
-without touching the log, and the in-memory outcome is routed to that exact
-trigger and a human claims assessor.
+without touching the log; the rejected candidate remains in memory for audit.
+The normal planner separately ignores the hostile text, finishes the required
+authoritative evidence checks, and constructs that exact safe escalation before
+calling the write boundary.
 
 ## Separate checklist
 
@@ -49,8 +51,9 @@ trigger and a human claims assessor.
 PYTHONPATH=. python3 scripts/run_guardrail_checklist.py
 ```
 
-The runner prints 14 scripted cases and writes
+The runner prints 15 scripted cases and writes
 `results/d3/guardrail_checklist.json`. They are separate from the 50 D4
 evaluation cases and alter no fixture or answer key. Deterministic hostile-text
-cases prove gate behavior; they do **not** measure live-model susceptibility.
+cases prove both unsafe-candidate blocking and the planner's exact safe route;
+they do **not** measure live-model susceptibility.
 That belongs to D5 and is not implemented or claimed here.

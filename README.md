@@ -114,6 +114,6 @@ and hostile authoritative-narrative write rule are documented in
 PYTHONPATH=. python3 scripts/run_guardrail_checklist.py
 ```
 
-Its JSON evidence is saved under `results/d3/`. These 14 cases are not part of
+Its JSON evidence is saved under `results/d3/`. These 15 cases are not part of
 the 50 D4 evaluation cases or its 70 scripted trials, and do not claim D5 live-model susceptibility testing.
 No network, model provider, or API key is used.
