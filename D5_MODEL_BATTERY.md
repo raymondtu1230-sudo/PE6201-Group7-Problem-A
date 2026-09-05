@@ -58,6 +58,10 @@ continuation → human review → final validation → aggregation**.
 
 Every member must privately set `OPENROUTER_API_KEY` in their own environment using
 their own key. Never paste its value into a command, result, notebook, chat, or Git file.
+On a shared terminal, clear the preceding member's environment variable and enter the
+current member's key again using a hidden prompt. An existing variable or a manifest
+member name does not establish key ownership. Each member runs all 50 cases / 70 trials;
+the separate seven-case authoring blocks do not partition the D5 evaluation schedule.
 
 ```bash
 # Zero-network plan display (not a lock check)
@@ -164,3 +168,46 @@ bounding spend. The per-run ceiling is US$0.035 and the cumulative job ceiling i
 US$2.50: 70 runs at the per-run ceiling cannot be started past the job cap, which stays
 below the teacher's US$3 member limit. These are safety ceilings, not invented provider
 price or cost estimates; provider-measured usage and cost remain mandatory.
+
+## Team safety audit and recovery
+
+See `D5_TEAM_READINESS.md` for the team-wide offline acceptance matrix. The live
+entry now enforces the same strict result validation as `--preflight`, under an
+exclusive operating-system lock for the output directory. A second runner fails
+before making a model call. Reserved output paths and actual write/fsync access are
+checked before spending. Never run two different directories for the same scheduled
+job: a directory lock cannot detect separate copies on separate machines.
+
+`active_trial.json` durably records each request's model input and each returned raw
+text, usage, response identifier and termination reason. It contains no Authorization
+header. Ordinary malformed actions remain scored model failures and the batch continues.
+Provider errors embedded in HTTP 200 stop the batch and retain their partial evidence.
+The checkpoint is removed only after the scored trial and derived files are saved.
+
+An interrupted or unprocessed checkpoint blocks further paid execution. Do not delete
+it or rerun the case to make it disappear. If the checkpoint already contains a scored
+row, this keyless command restores the row and summaries without calling a model:
+
+```bash
+python3 scripts/run_d5_live.py --recover --job 1 --output YOUR_EXISTING_OUTPUT --baseline-lock D5_LOCK.json
+```
+
+For an in-flight or unscored response, recovery refuses automatic replay: retain the
+journal, inspect the response and reconcile any uncertain provider charge offline.
+`known_cost_usd` is the measured lower bound already returned; `cost_usd=null` or
+`billing_complete=false` means the complete bill is unresolved. Further paid execution
+is blocked until that evidence is reviewed and reconciled. Unknown charges are never
+silently entered as zero. An operating-system kill or loss of the storage device cannot
+be made transactional with a remote provider; preserve the pre-request checkpoint.
+
+Generation settings are shared requested settings. Providers may ignore parameters
+their model does not support; do not claim identical effective sampling solely because
+the request includes `temperature=0`. Inspect actual model identity and termination
+metadata in each member's smoke trace. Do not alter one member's prompt, limits or
+settings after seeing their score. A public model listing or successful key-auth check
+does not guarantee generation access, available balance, output quality or uptime.
+
+This repair changes locked runtime files. Merge the repair, then generate the lock
+from clean merged main and merge that lock-only change before any new paid run.
+Existing r3/r5 pilot files retain their original baseline and cost evidence; do not
+rewrite their hashes or silently mix them into results from the repaired baseline.

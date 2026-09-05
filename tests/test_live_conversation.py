@@ -247,6 +247,7 @@ class LiveConversationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, \
                 patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}), \
                 patch("scripts.run_d5_live.verify_lock", return_value=verified), \
+                patch("scripts.validate_d5_results.verify_lock", return_value=verified), \
                 patch("urllib.request.urlopen",
                       side_effect=AssertionError("network must not be used")):
             output = Path(tmp) / "one-then-four"

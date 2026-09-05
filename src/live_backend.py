@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 import urllib.request
@@ -21,15 +22,25 @@ class LiveResponse:
     latency_seconds: float
     model: str | None = None
     response_id: str | None = None
+    finish_reason: str | None = None
+    native_finish_reason: str | None = None
 
 
 class PaidMalformedResponse(RuntimeError):
     """HTTP-success response with billable evidence but unusable model content."""
     def __init__(self, message: str, *, usage: dict[str, Any], model: Any, response_id: Any,
-                 latency_seconds: float) -> None:
+                 latency_seconds: float, text: str | None = None,
+                 finish_reason: str | None = None, native_finish_reason: str | None = None,
+                 error: Any = None) -> None:
         super().__init__(message)
         self.usage, self.model, self.response_id = usage, model, response_id
         self.latency_seconds = latency_seconds
+        self.text, self.finish_reason = text, finish_reason
+        self.native_finish_reason, self.error = native_finish_reason, error
+
+
+class PaidProviderError(PaidMalformedResponse):
+    """The provider reported a generation error, possibly with partial output."""
 
 
 def build_live_messages(model_input: dict[str, Any]) -> list[dict[str, str]]:
@@ -176,12 +187,20 @@ def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = 
     required_usage = ("prompt_tokens", "completion_tokens", "cost")
     usage_complete = isinstance(usage, dict) and all(
         isinstance(usage.get(key), (int, float)) and not isinstance(usage.get(key), bool) and
-        usage[key] >= 0 for key in required_usage)
+        math.isfinite(usage[key]) and usage[key] >= 0 for key in required_usage)
+    details = dict(usage=dict(usage) if isinstance(usage, dict) else {},
+                   model=payload_object.get("model"), response_id=payload_object.get("id"),
+                   latency_seconds=latency, text=text if isinstance(text, str) else None,
+                   finish_reason=first.get("finish_reason"),
+                   native_finish_reason=first.get("native_finish_reason"),
+                   error=payload_object.get("error") or first.get("error"))
+    if details["error"] is not None or details["finish_reason"] == "error":
+        raise PaidProviderError("provider reported a generation error", **details)
     if not isinstance(text, str) or not text.strip() or not usage_complete:
         raise PaidMalformedResponse("HTTP-success response had unusable content or usage",
-                                    usage=dict(usage or {}) if isinstance(usage, dict) else {},
-                                    model=payload_object.get("model"),
-                                    response_id=payload_object.get("id"), latency_seconds=latency)
+                                    **details)
     return LiveResponse(text=text, usage=dict(usage),
                         latency_seconds=latency,
-                        model=payload_object.get("model"), response_id=payload_object.get("id"))
+                        model=payload_object.get("model"), response_id=payload_object.get("id"),
+                        finish_reason=first.get("finish_reason"),
+                        native_finish_reason=first.get("native_finish_reason"))

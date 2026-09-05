@@ -14,7 +14,12 @@ with commit or review references.
 
 Planned ownership is not evidence that a run or review was completed.
 
-Before final submission, every member must commit their own genuine D5 result and/or
-review work using their own attributable Git identity. Replace pending cells only with
-truthful commit, result, and review references; planned assignment is never evidence of
-completed contribution.
+Before final submission, record each member's genuine D5 runs and review work with
+truthful result and review references. Each member uses their own API key. The declared
+repository maintainer may integrate their submitted files through the shared repository;
+a separate Git identity is not a substitute for evidence of who performed the work.
+Replace pending cells only with verifiable contributions.
+
+Case-authoring ownership and model evaluation are different assignments. Each member
+authored a different seven-case block, but every D5 job evaluates the same full 50-case,
+70-trial schedule. Job 5 uses Gemini v1 as the fixed-model comparison to Job 4's v2.

@@ -14,7 +14,7 @@ def canonical(value: object)->str: return sha_bytes(json.dumps(value,sort_keys=T
 def locked_paths(root: Path=ROOT)->list[Path]:
     return [*sorted((root/"data_A").glob("*.json")),root/"make_fixtures_A.py",root/"expected_outcomes_A.json",
             root/"src/claim_agent.py",root/"src/live_backend.py",root/"src/d4_evaluation.py",
-            root/"scripts/run_d5_live.py",root/"scripts/validate_d5_results.py",
+            root/"scripts/run_d5_live.py",root/"scripts/d5_safety.py",root/"scripts/validate_d5_results.py",
             root/"scripts/aggregate_d5_results.py",root/"scripts/create_d5_lock.py",
             root/"config/d5_jobs.json"]
 def git(*args:str,root:Path=ROOT,check:bool=True)->str:

@@ -76,7 +76,8 @@ class D5RunnerContracts(unittest.TestCase):
             class CountingFactory:
                 def __new__(cls,**kwargs): calls.append(1); return FailureFactory(**kwargs)
             with patch("scripts.run_d5_live.verify_lock",return_value={"lock_hash":canonical(lock)}):
-                self.assertEqual(runner.run_live_job(job_number=1,output=d/"out",lock_path=d/"lock.json",max_new_runs=1,agent_factory=CountingFactory),4)
+                with self.assertRaisesRegex(ValueError,"unresolved billing"):
+                    runner.run_live_job(job_number=1,output=d/"out",lock_path=d/"lock.json",max_new_runs=1,agent_factory=CountingFactory)
             self.assertEqual(calls,[])
     def test_automatic_failures_are_retained_and_batch_continues(self):
         calls=[]
