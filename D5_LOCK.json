@@ -1,6 +1,6 @@
 {
   "format_version": 2,
-  "baseline_commit": "7c709a904ced121937464428784ba77000056012",
+  "baseline_commit": "2fe771f32b528e0d7ae811a453acb027a2ec488d",
   "files": {
     "data_A/claims.json": "53f16c1692261864bcb12bfaf73eeb6a9b96ff0ff97d19aa6f1d5db2324bf977",
     "data_A/decided_claims.json": "326263d37a5ffc694fff078a560e47cfc46f8702a808e4a6fe5f567117a66484",
@@ -15,7 +15,7 @@
     "src/claim_agent.py": "ff944c1f70d78967b43344161ec043c22c3ddf86874be1872df96fb2d01f1117",
     "src/live_backend.py": "b0325431b3d269802eedbda890b39a63f4e90395fe1eabd6754b41600de4ecc0",
     "src/d4_evaluation.py": "40bf03a10c49b6a19f02cc9d44366bea240fd2ad5603955bf627fa7ec0ae42dd",
-    "scripts/run_d5_live.py": "75c02f629c6563d13eb8052ad631a5e5176288110f4f6a26d9bea84f826aa349",
+    "scripts/run_d5_live.py": "916f0a8538fb3f59596a9510628099ad6c3a656948191853f34ed65df925798f",
     "scripts/validate_d5_results.py": "d2265ed4b025ef113754cb74307c5148c36988ca2d70dbaaf94a03a5636cdc9f",
     "scripts/aggregate_d5_results.py": "ede7de26bd2d60c07536d7fcc7b9832117967148b37e25f56f71c82ae339dd79",
     "scripts/create_d5_lock.py": "673cbdc703ed1b2eb555898c71f747e42711e7189545dbd20bf7b02a314a175b",
