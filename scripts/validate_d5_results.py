@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recompute and strictly validate one D5 result directory."""
 from __future__ import annotations
-import argparse,json,re,sys
+import argparse,json,math,re,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
@@ -10,8 +10,9 @@ from scripts.run_d5_live import load_labels,planned_runs
 from src.d4_evaluation import score_trial,validate_annotations
 from src.claim_agent import DECISION_RECORD_SCHEMA
 from scripts.run_d5_live import tool_order
+from scripts.d5_safety import known_cost
 SECRET=re.compile(r"(?i)(authorization\s*:|bearer\s+[A-Za-z0-9_-]{12,}|sk-[A-Za-z0-9_-]{12,})")
-def nonnegative_number(x:object)->bool: return isinstance(x,(int,float)) and not isinstance(x,bool) and x>=0
+def nonnegative_number(x:object)->bool: return isinstance(x,(int,float)) and not isinstance(x,bool) and math.isfinite(x) and x>=0
 def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
     raw="\n".join(p.read_text(errors="replace") for p in directory.glob("*.*") if p.is_file())
     if SECRET.search(raw): raise ValueError("likely secret or authorization header")
@@ -25,10 +26,19 @@ def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
     if len(attempts)!=len(set(attempts)) or any(not isinstance(x[1],int) or x[1]<1 for x in attempts): raise ValueError("duplicate or invalid attempt number")
     for row in rows:
         usage=row.get("provider_usage",[])
+        if not isinstance(usage,list) or any(not isinstance(x,dict) for x in usage): raise ValueError("invalid provider usage")
+        if "known_cost_usd" in row and row["known_cost_usd"]!=known_cost(usage): raise ValueError("known paid cost was not retained")
         if usage and all(all(nonnegative_number(x.get(k)) for k in ("prompt_tokens","completion_tokens","cost")) for x in usage):
             if row.get("cost_source")!="provider_measured" or row.get("cost_usd")!=sum(x["cost"] for x in usage): raise ValueError("paid-attempt cost was not retained")
     expected={x["run_id"]:x for x in planned_runs()}; ids=[x.get("run_id") for x in completed]
+    for row in rows:
+        if row.get("run_id") not in expected: raise ValueError("unknown run ID")
+        if row.get("transport_status") not in {"model_response","transport_failure","provider_failure"}: raise ValueError("unknown transport status")
+        if any(row.get(k)!=expected[row["run_id"]][k] for k in ("case_id","trial","negative")): raise ValueError("schedule row mismatch")
+        if any(row.get(k)!=manifest[k] for k in ("member","model","prompt_version","generation_settings","baseline_commit","lock_hash")): raise ValueError("mixed job or lock")
     if len(ids)!=len(set(ids)): raise ValueError("duplicate completed model response")
+    billing_complete=all(x.get("cost_usd") is not None and x.get("billing_complete",True) for x in rows)
+    if not allow_incomplete and not billing_complete: raise ValueError("unresolved billing evidence")
     if not allow_incomplete and (len(ids)!=70 or set(ids)!=set(expected)): raise ValueError("exactly 70 scheduled model responses required")
     if any(rid not in expected for rid in ids): raise ValueError("unknown run ID")
     labels,facts=load_labels(); labelmap={x["case_id"]:x for x in labels}; claims={x["claim_id"]:x for x in facts["claims"]}
@@ -46,7 +56,12 @@ def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
         if not isinstance(row.get("provider_usage"),list) or not isinstance(row.get("provider_responses"),list): raise ValueError("invalid provider evidence")
         scored=score_trial(labelmap[row["case_id"]],row["decision_record"],claims[row["case_id"]],facts,autonomy="confirm",confirmed=True,write_count=row.get("write_count"),halt_reason=row.get("halt_reason"))
         if row.get("automatic_pass") is not scored["passed"] or row.get("failed_checks")!=scored["failed_checks"] or row.get("checks")!=scored["checks"]: raise ValueError("stored score/checks do not match recomputation")
-        if not all(nonnegative_number(row.get(k)) for k in ("input_tokens","output_tokens","latency_seconds")): raise ValueError("invalid token or latency value")
+        if not nonnegative_number(row.get("latency_seconds")): raise ValueError("invalid latency value")
+        if allow_incomplete and row.get("halt_reason")=="paid_malformed_response" and row.get("cost_usd") is None:
+            # Audit evidence is valid even with unknown billing. inspect_live_job
+            # separately blocks any further spending; final validation still fails.
+            continue
+        if not all(nonnegative_number(row.get(k)) for k in ("input_tokens","output_tokens")): raise ValueError("invalid token or latency value")
         usage=row["provider_usage"]
         if len(usage)!=row.get("model_calls") or any(not all(nonnegative_number(x.get(k)) for k in ("prompt_tokens","completion_tokens","cost")) for x in usage): raise ValueError("incomplete per-call provider usage")
         if row.get("token_source")!="provider_measured" or row["input_tokens"]!=sum(x["prompt_tokens"] for x in usage) or row["output_tokens"]!=sum(x["completion_tokens"] for x in usage): raise ValueError("false provider-measured token evidence")
@@ -81,11 +96,12 @@ def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
     summary=json.loads((directory/"summary.json").read_text())
     pending=any(x["status"]=="pending" for x in annotations)
     if summary.get("status")=="complete":
-        if pending or len(completed)!=70: raise ValueError("complete result has pending/incomplete reviews")
+        if pending or len(completed)!=70 or not billing_complete: raise ValueError("complete result has pending/incomplete reviews or billing")
         overall=sum(x[1] for x in finals)/70; neg=[x for x in finals if x[0]["negative"]]; negative=sum(x[1] for x in neg)/30
         if summary.get("final_pass_rate")!=overall or summary.get("negative_pass_rate")!=negative: raise ValueError("final rates do not match recomputation")
-    paid_attempt_cost=sum(x["cost_usd"] for x in rows if isinstance(x.get("cost_usd"),(int,float)) and x.get("cost_source")=="provider_measured")
-    return {"valid":True,"complete":summary.get("status")=="complete","model":manifest["model"],"member":manifest["member"],"prompt_version":manifest["prompt_version"],"trials":len(completed),"finals":finals,"paid_attempt_cost_usd":paid_attempt_cost}
+    paid_attempt_cost=sum(known_cost(x.get("provider_usage",[])) for x in rows)
+    return {"valid":True,"complete":summary.get("status")=="complete","model":manifest["model"],"member":manifest["member"],"prompt_version":manifest["prompt_version"],"trials":len(completed),"finals":finals,"paid_attempt_cost_usd":paid_attempt_cost,
+            "billing_complete":billing_complete}
 def main()->None:
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("directory",type=Path); p.add_argument("--lock",type=Path,required=True); p.add_argument("--allow-incomplete",action="store_true"); a=p.parse_args(); result=validate(a.directory,a.lock,a.allow_incomplete); result.pop("finals"); print(json.dumps(result,indent=2))
 if __name__=="__main__": main()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Staged, sequential and resumable D5 runner; default mode is network-free."""
 from __future__ import annotations
-import argparse,json,os,sys,tempfile,time
+import argparse,json,math,os,sys,tempfile,time
 from datetime import datetime,timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,6 +10,7 @@ from src.claim_agent import ClaimAgent, assert_decision_contract, normalize_acti
 from src.live_backend import assert_live_message_contract
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
+from scripts.d5_safety import ACTIVE,TrialJournal,check_output,durable_json,exclusive_output,known_cost,probe_writes
 D5_MAX_STEPS=8  # Scripted parallel evidence peaks at 6 calls; two turns are a controlled margin.
 MAX_NEW_RUNS_BOUND=70
 
@@ -28,6 +29,14 @@ def validate_battery_config(config:dict)->None:
             not isinstance(config.get("job_budget_usd"),(int,float)) or
             config["job_budget_usd"] < config["run_budget_usd"]):
         raise ValueError("invalid D5 budget caps")
+    settings=config["generation_settings"]
+    if set(settings)!={"temperature","top_p","max_tokens"}:
+        raise ValueError("generation settings must not override model, messages or routing")
+    if (not isinstance(settings["max_tokens"],int) or isinstance(settings["max_tokens"],bool) or settings["max_tokens"]<=0 or
+        not all(isinstance(settings[k],(int,float)) and not isinstance(settings[k],bool) and math.isfinite(settings[k]) for k in ("temperature","top_p")) or
+        not 0<=settings["temperature"]<=2 or not 0<settings["top_p"]<=1 or
+        not all(math.isfinite(config[k]) and not isinstance(config[k],bool) for k in ("run_budget_usd","job_budget_usd"))):
+        raise ValueError("invalid generation settings or budget caps")
 
 def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int)->tuple[dict,dict,dict,list[dict]]:
     """Perform every local compatibility check before an agent/provider exists."""
@@ -49,8 +58,7 @@ def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:
     schedule=planned_runs()
     if len(schedule)!=MAX_NEW_RUNS_BOUND or len({x["run_id"] for x in schedule})!=len(schedule):
         raise ValueError("D5 schedule is incompatible with run caps")
-    if output.exists() and not output.is_dir():
-        raise ValueError("output path is not a directory")
+    check_output(output)
     rows=[]
     result_path=output/"trials.jsonl"
     if result_path.exists():
@@ -62,7 +70,7 @@ def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:
             raise ValueError("incompatible output contains an unknown run ID")
     return config,job,{"lock":lock,"verified":verified},rows
 def atomic_json(path:Path,value:object)->None:
-    tmp=path.with_suffix(path.suffix+".tmp"); tmp.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n"); tmp.replace(path)
+    durable_json(path,value)
 def load_labels()->tuple[list[dict],dict]:
     facts=load_facts(); return validate_answer_key(json.loads((ROOT/"expected_outcomes_A.json").read_text()),facts),facts
 def planned_runs()->list[dict]:
@@ -78,7 +86,7 @@ def tool_order(trace:list[dict])->list[str]:
         order.extend(x.get("tool") for x in calls if isinstance(x,dict) and isinstance(x.get("tool"),str))
     return order
 def complete_provider_usage(item:dict)->bool:
-    return all(isinstance(item.get(k),(int,float)) and not isinstance(item.get(k),bool) and item[k]>=0
+    return all(isinstance(item.get(k),(int,float)) and not isinstance(item.get(k),bool) and math.isfinite(item[k]) and item[k]>=0
                for k in ("prompt_tokens","completion_tokens","cost"))
 def cost_evidence(usages:list[dict],model:str,pricing:dict)->tuple[float|None,str,dict|None]:
     if usages and all(complete_provider_usage(x) for x in usages):
@@ -108,6 +116,8 @@ def inspect_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:in
     """The actual keyless, read-only preflight, shared with paid execution checks."""
     config,job,info,rows=preflight_live_job(job_number=job_number,output=output,
         lock_path=lock_path,max_new_runs=max_new_runs)
+    if (output/ACTIVE).exists():
+        raise ValueError("unresolved active_trial.json: use keyless --recover for a completed row; otherwise retain it for offline audit before spending")
     ensure_manifest(output,job_manifest(job,config["generation_settings"],info["lock"],
         info["verified"]["lock_hash"]),create=False)
     if not rows and max_new_runs!=1:
@@ -115,6 +125,8 @@ def inspect_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:in
     if rows:
         from scripts.validate_d5_results import validate
         validate(output,lock_path,allow_incomplete=True)
+        if any(row.get("cost_usd") is None or row.get("billing_complete") is False for row in rows):
+            raise ValueError("unresolved billing evidence; reconcile retained calls before further paid requests")
     attempted={row["run_id"] for row in rows}
     remaining=[item for item in planned_runs() if item["run_id"] not in attempted]
     return {"mode":"preflight","valid":True,"network_requests":0,**info["verified"],
@@ -139,7 +151,8 @@ def write_summary(output:Path,rows:list[dict],labels:dict[str,dict],status_hint:
         passed=row["automatic_pass"]
         if labels[row["case_id"]].get("grading_method","code")=="judged": passed=passed and amap.get(row["case_id"])=="approved"
         final.append((row,passed))
-    pending=any(x["status"]=="pending" for x in annotations); cost_missing=any(x.get("cost_usd") is None for x in completed)
+    pending=any(x["status"]=="pending" for x in annotations)
+    cost_missing=any(x.get("cost_usd") is None or x.get("billing_complete") is False for x in rows)
     complete=len(completed)==70 and not pending and not cost_missing
     negatives=[x for x in final if x[0]["negative"]]
     atomic_json(output/"summary.json",{"status":"complete" if complete else status_hint,
@@ -148,6 +161,17 @@ def write_summary(output:Path,rows:list[dict],labels:dict[str,dict],status_hint:
         "judgements_pending":pending,"cost_evidence_missing":cost_missing})
 def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
                  retry_run_id:str|None=None,agent_factory=ClaimAgent)->int:
+    # The standalone preflight is optional convenience; the paid entry ALWAYS
+    # performs the same checks, again while holding the directory's writer lock.
+    inspect_live_job(job_number=job_number,output=output,lock_path=lock_path,max_new_runs=max_new_runs)
+    with exclusive_output(output):
+        inspect_live_job(job_number=job_number,output=output,lock_path=lock_path,max_new_runs=max_new_runs)
+        probe_writes(output)
+        return _run_live_job(job_number=job_number,output=output,lock_path=lock_path,
+            max_new_runs=max_new_runs,retry_run_id=retry_run_id,agent_factory=agent_factory)
+
+def _run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
+                  retry_run_id:str|None=None,agent_factory=ClaimAgent)->int:
     config,job,lock_info,rows=preflight_live_job(job_number=job_number,output=output,
         lock_path=lock_path,max_new_runs=max_new_runs)
     lock,verified=lock_info["lock"],lock_info["verified"]; settings=config["generation_settings"]
@@ -166,7 +190,7 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
         if max_new_runs != 1: raise ValueError("--retry-run-id requires --max-new-runs 1 and may incur another charge")
         prior=[x for x in rows if x.get("run_id")==retry_run_id]
         if not prior or retry_run_id not in {x["run_id"] for x in schedule}: raise ValueError("retry run ID is not a previously attempted scheduled run")
-        if any(x.get("transport_status")=="model_response" for x in prior): raise ValueError("a completed provider response cannot be retried")
+        if any(x.get("transport_status")!="transport_failure" for x in prior): raise ValueError("a completed provider response cannot be retried")
         schedule=[next(x for x in schedule if x["run_id"]==retry_run_id)]
     count=0
     for item in schedule:
@@ -175,33 +199,83 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
         spent=sum(x["cost_usd"] for x in rows if isinstance(x.get("cost_usd"),(int,float)))
         if spent + config["run_budget_usd"] > config["job_budget_usd"]:
             rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap,"job_budget_cap"); return 4
+        attempt=1+max((x.get("attempt",1) for x in rows if x.get("run_id")==item["run_id"]),default=0)
+        journal=TrialJournal(output,{**item,**job,"attempt":attempt,
+            "baseline_commit":lock["baseline_commit"],"lock_hash":verified["lock_hash"]})
         with tempfile.TemporaryDirectory(prefix="d5-") as tmp:
             started=time.monotonic(); agent=agent_factory(log_path=Path(tmp)/"decision.jsonl",backend="live",model=job["model"],descriptor_version=job["prompt_version"],execution_mode="parallel",max_steps=D5_MAX_STEPS,budget_usd=config["run_budget_usd"],generation_settings=settings)
+            if getattr(agent,"backend",None)=="live" and hasattr(agent,"live_caller"):
+                agent.live_caller=journal.wrap(agent.live_caller)
             result=agent.run(item["case_id"],autonomy="confirm",confirm=True); elapsed=time.monotonic()-started
+        received=[x for x in journal.data["calls"] if "usage" in x]
+        if journal.data["calls"] and len(received)!=len(result.provider_usage):
+            raise ValueError("provider checkpoint and agent usage disagree; retained active_trial.json requires offline audit")
         record=result.decision_record; score=score_trial(labelmap[item["case_id"]],record,claims[item["case_id"]],facts,autonomy="confirm",confirmed=True,write_count=result.write_count,halt_reason=result.halt_reason)
         cost,cost_source,cost_detail=cost_evidence(result.provider_usage,job["model"],config.get("pricing",{}))
         usage_complete=bool(result.provider_usage) and all(complete_provider_usage(x) for x in result.provider_usage)
         provider_in=sum(int(x["prompt_tokens"]) for x in result.provider_usage) if usage_complete else None
         provider_out=sum(int(x["completion_tokens"]) for x in result.provider_usage) if usage_complete else None
-        transport_failure=result.halt_reason in {"transport_error", "authentication_error"}
-        attempt=1+max((x.get("attempt",1) for x in rows if x.get("run_id")==item["run_id"]),default=0)
+        transport_failure=result.halt_reason in {"transport_error", "authentication_error", "provider_error"}
         row={**item,**job,"attempt":attempt, "generation_settings":settings,"baseline_commit":lock["baseline_commit"],"lock_hash":verified["lock_hash"],"prompt_descriptor_hash":lock["prompts"][job["prompt_version"]],"run_date":manifest["started_at"],
              "decision_record":record,"trace":result.trace,"halt_reason":result.halt_reason,"write_count":result.write_count,"gate_result":record.get("gate_result") if record else None,"tool_order":tool_order(result.trace),"tool_calls":result.tool_calls,
              "code_result":"passed" if score["passed"] else "failed","automatic_pass":score["passed"],"failed_checks":score["failed_checks"],"checks":score["checks"],"provider_usage":result.provider_usage,"provider_responses":result.provider_responses,
              "model_calls":result.model_calls,"action_turns":result.action_turns,
              "input_tokens":provider_in,"output_tokens":provider_out,"token_source":"provider_measured" if usage_complete else "unavailable","latency_seconds":elapsed,"cost_usd":cost,"cost_source":cost_source,"cost_detail":cost_detail,
-             "transport_status":"transport_failure" if transport_failure else "model_response"}
+             "known_cost_usd":known_cost(result.provider_usage),
+             "billing_complete":journal.data["billing_complete"] and cost is not None,
+             "transport_status":"provider_failure" if result.halt_reason=="provider_error" else "transport_failure" if transport_failure else "model_response"}
+        journal.completed(row)
         with result_path.open("a") as out: out.write(json.dumps(row,sort_keys=True)+"\n"); out.flush(); os.fsync(out.fileno())
         rows.append(row); rebuild_reviews(output,rows,labelmap); count+=1
-        if transport_failure: write_summary(output,rows,labelmap,"transport_failure"); return 2
-        if result.halt_reason == "paid_malformed_response": write_summary(output,rows,labelmap,"paid_malformed_response"); return 3
-        if result.halt_reason == "budget_cap": write_summary(output,rows,labelmap,"run_budget_cap"); return 4
+        if transport_failure:
+            write_summary(output,rows,labelmap,"provider_error" if result.halt_reason=="provider_error" else "transport_failure"); journal.clear(); return 2
+        if result.halt_reason == "paid_malformed_response":
+            write_summary(output,rows,labelmap,"paid_malformed_response"); journal.clear(); return 3
+        if result.halt_reason == "budget_cap":
+            write_summary(output,rows,labelmap,"run_budget_cap"); journal.clear(); return 4
+        write_summary(output,rows,labelmap)
+        journal.clear()
     rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap)
     return 0
+
+def recover_live_job(*,job_number:int,output:Path,lock_path:Path)->dict:
+    """Restore only an already-scored checkpoint. Never repeat a provider call."""
+    with exclusive_output(output):
+        config,job,info,rows=preflight_live_job(job_number=job_number,output=output,
+            lock_path=lock_path,max_new_runs=1)
+        ensure_manifest(output,job_manifest(job,config["generation_settings"],info["lock"],
+            info["verified"]["lock_hash"]),create=False)
+        checkpoint=json.loads((output/ACTIVE).read_text())
+        row=checkpoint.get("completed_trial")
+        if checkpoint.get("phase")!="trial_scored" or not isinstance(row,dict):
+            raise ValueError("incomplete request/response journal: preserve it and reconcile billing offline; automatic replay is forbidden")
+        expected={**job,"baseline_commit":info["lock"]["baseline_commit"],
+                  "lock_hash":info["verified"]["lock_hash"]}
+        if any(row.get(k)!=v or checkpoint.get("identity",{}).get(k)!=v for k,v in expected.items()):
+            raise ValueError("checkpoint job/lock mismatch")
+        matching=[x for x in rows if (x["run_id"],x["attempt"])==(row["run_id"],row["attempt"])]
+        if matching and matching!=[row]: raise ValueError("checkpoint conflicts with retained trial")
+        if not matching:
+            with (output/"trials.jsonl").open("a") as out:
+                out.write(json.dumps(row,sort_keys=True)+"\n"); out.flush(); os.fsync(out.fileno())
+            rows.append(row)
+        labels,_=load_labels(); labelmap={x["case_id"]:x for x in labels}
+        rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap,"recovered")
+        from scripts.validate_d5_results import validate
+        validate(output,lock_path,allow_incomplete=True)
+        (output/ACTIVE).unlink()
+        return {"mode":"recovery","valid":True,"network_requests":0,"run_id":row["run_id"]}
 def main()->None:
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--job",type=int,choices=range(1,6)); p.add_argument("--output",type=Path); p.add_argument("--backend",default="scripted",choices=("scripted","live")); p.add_argument("--confirm-live",action="store_true"); p.add_argument("--baseline-lock",type=Path); p.add_argument("--max-new-runs",type=int); p.add_argument("--retry-run-id")
     p.add_argument("--preflight",action="store_true",help="validate a job, lock and output without a key, network or writes")
+    p.add_argument("--recover",action="store_true",help="restore an already-scored checkpoint without a key or network")
     a=p.parse_args()
+    if a.recover:
+        if a.preflight or a.backend=="live" or None in (a.job,a.output,a.baseline_lock):
+            raise SystemExit("recovery requires job/output/lock and cannot be combined with live or preflight")
+        try: print(json.dumps(recover_live_job(job_number=a.job,output=a.output,lock_path=a.baseline_lock),indent=2))
+        except (ValueError,OSError) as exc: raise SystemExit(f"recovery refused: {exc}")
+        return
     if a.preflight:
         if None in (a.job,a.output,a.baseline_lock):
             raise SystemExit("preflight requires --job, --output and --baseline-lock")
@@ -216,5 +290,7 @@ def main()->None:
     if None in (a.job,a.output,a.baseline_lock,a.max_new_runs): raise SystemExit("live execution requires --job, --output, --baseline-lock, and --max-new-runs")
     try: code=run_live_job(job_number=a.job,output=a.output,lock_path=a.baseline_lock,max_new_runs=a.max_new_runs,retry_run_id=a.retry_run_id)
     except (ValueError,OSError,json.JSONDecodeError) as exc: raise SystemExit(f"live execution refused: {exc}")
+    except KeyboardInterrupt: raise SystemExit("live execution interrupted: retain active_trial.json; do not rerun an ambiguous request")
+    except Exception as exc: raise SystemExit(f"live execution stopped ({type(exc).__name__}); retain active_trial.json for offline audit")
     raise SystemExit(code)
 if __name__=="__main__": main()

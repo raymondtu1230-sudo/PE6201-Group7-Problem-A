@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from src.live_backend import BACKEND, BASE_URL, MODEL, LiveResponse, PaidMalformedResponse, call_live_model
+from src.live_backend import BACKEND, BASE_URL, MODEL, LiveResponse, PaidMalformedResponse, PaidProviderError, call_live_model
 
 # Vendor-neutral configuration is defined in live_backend; scripted remains default.
 INPUT_TOKEN_PRICE_PER_MILLION = 0.0
@@ -343,6 +343,10 @@ def normalize_action(action_text: str) -> list[dict[str, Any]]:
     normalized = []
     for call in calls:
         if "tool" in call or "arguments" in call:
+            if not isinstance(call.get("tool"), str) or not call["tool"].strip():
+                raise ValueError("malformed_action")
+            if not isinstance(call.get("arguments", {}), dict):
+                raise ValueError("malformed_action")
             normalized.append(call)
             continue
         if len(call) != 1:
@@ -840,7 +844,9 @@ class ClaimAgent:
             response = self.live_caller(model=self.model, model_input=self.model_input(state),
                                         base_url=self.base_url, settings=self.generation_settings)
             state.provider_usage.append(dict(response.usage))
-            state.provider_responses.append({"model": response.model, "response_id": response.response_id})
+            state.provider_responses.append({"model": response.model, "response_id": response.response_id,
+                                             "finish_reason": response.finish_reason,
+                                             "native_finish_reason": response.native_finish_reason})
             state.latency_seconds += response.latency_seconds
             cost = response.usage.get("cost")
             if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0:
@@ -920,13 +926,18 @@ class ClaimAgent:
             except PaidMalformedResponse as exc:
                 state.model_calls += 1
                 state.provider_usage.append(dict(exc.usage))
-                state.provider_responses.append({"model": exc.model, "response_id": exc.response_id})
+                state.provider_responses.append({"model": exc.model, "response_id": exc.response_id,
+                                                 "finish_reason": exc.finish_reason,
+                                                 "native_finish_reason": exc.native_finish_reason,
+                                                 "error": exc.error})
                 state.latency_seconds += exc.latency_seconds
                 cost = exc.usage.get("cost")
                 if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0:
                     state.estimated_cost += cost
-                state.halt_reason = "paid_malformed_response"
-                state.trace.append({"ModelError": "paid_malformed_response"})
+                state.halt_reason = "provider_error" if isinstance(exc, PaidProviderError) else "paid_malformed_response"
+                state.trace.append({"ModelError": state.halt_reason})
+                if exc.text is not None:
+                    state.trace.append({"ModelResponse": exc.text})
                 break
             except Exception as exc:
                 authentication = (getattr(exc, "code", None) in (401, 403) or
