@@ -6,7 +6,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
-from src.claim_agent import ClaimAgent,normalize_action
+from src.claim_agent import ClaimAgent, assert_decision_contract, normalize_action
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
 D5_MAX_STEPS=8  # Scripted parallel evidence peaks at 6 calls; two turns are a controlled margin.
@@ -20,6 +20,43 @@ def validate_battery_config(config:dict)->None:
         raise ValueError("battery requires two planned price tiers and a fixed-model v1/v2 pair")
     if not all(x.get("prompt_version")=="v2" for x in v2) or not isinstance(config.get("generation_settings"),dict):
         raise ValueError("v2 jobs must share one generation-settings block and v2 descriptor")
+    required={"member","model","prompt_version","family","price_tier"}
+    if any(not required.issubset(job) or not all(isinstance(job[k],str) and job[k] for k in required)
+           for job in jobs): raise ValueError("every job requires nonblank identity fields")
+    if (not isinstance(config.get("run_budget_usd"),(int,float)) or config["run_budget_usd"]<=0 or
+            not isinstance(config.get("job_budget_usd"),(int,float)) or
+            config["job_budget_usd"] < config["run_budget_usd"]):
+        raise ValueError("invalid D5 budget caps")
+
+def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int)->tuple[dict,dict,dict,list[dict]]:
+    """Perform every local compatibility check before an agent/provider exists."""
+    if not isinstance(job_number,int) or not 1<=job_number<=5:
+        raise ValueError("job_number must be between 1 and 5")
+    if not 1<=max_new_runs<=MAX_NEW_RUNS_BOUND:
+        raise ValueError("max_new_runs must be between 1 and 70")
+    config=json.loads((ROOT/"config/d5_jobs.json").read_text()); validate_battery_config(config)
+    job=config["jobs"][job_number-1]
+    if job["prompt_version"] not in ("v1","v2"):
+        raise ValueError("configured prompt version is unavailable")
+    # This exercises the declared fields, enums, mappings, canonical example,
+    # normalizer and structural validator rather than searching prompt strings.
+    assert_decision_contract()
+    lock=json.loads(lock_path.read_text()); verified=verify_lock(lock)
+    schedule=planned_runs()
+    if len(schedule)!=MAX_NEW_RUNS_BOUND or len({x["run_id"] for x in schedule})!=len(schedule):
+        raise ValueError("D5 schedule is incompatible with run caps")
+    if output.exists() and not output.is_dir():
+        raise ValueError("output path is not a directory")
+    rows=[]
+    result_path=output/"trials.jsonl"
+    if result_path.exists():
+        rows=[json.loads(x) for x in result_path.read_text().splitlines()]
+        attempts=[(x.get("run_id"),x.get("attempt")) for x in rows]
+        if len(attempts)!=len(set(attempts)):
+            raise ValueError("duplicate existing run attempt")
+        if any(x.get("run_id") not in {r["run_id"] for r in schedule} for x in rows):
+            raise ValueError("incompatible output contains an unknown run ID")
+    return config,job,{"lock":lock,"verified":verified},rows
 def atomic_json(path:Path,value:object)->None:
     tmp=path.with_suffix(path.suffix+".tmp"); tmp.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n"); tmp.replace(path)
 def load_labels()->tuple[list[dict],dict]:
@@ -87,11 +124,12 @@ def write_summary(output:Path,rows:list[dict],labels:dict[str,dict],status_hint:
         "judgements_pending":pending,"cost_evidence_missing":cost_missing})
 def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
                  retry_run_id:str|None=None,agent_factory=ClaimAgent)->int:
-    if not 1<=max_new_runs<=MAX_NEW_RUNS_BOUND: raise ValueError("max_new_runs must be between 1 and 70")
-    config=json.loads((ROOT/"config/d5_jobs.json").read_text()); validate_battery_config(config); job=config["jobs"][job_number-1]; settings=config["generation_settings"]
-    lock=json.loads(lock_path.read_text()); verified=verify_lock(lock); output.mkdir(parents=True,exist_ok=True)
+    config,job,lock_info,rows=preflight_live_job(job_number=job_number,output=output,
+        lock_path=lock_path,max_new_runs=max_new_runs)
+    lock,verified=lock_info["lock"],lock_info["verified"]; settings=config["generation_settings"]
+    output.mkdir(parents=True,exist_ok=True)
     manifest=ensure_manifest(output,job_manifest(job,settings,lock,verified["lock_hash"]))
-    result_path=output/"trials.jsonl"; rows=[json.loads(x) for x in result_path.read_text().splitlines()] if result_path.exists() else []
+    result_path=output/"trials.jsonl"
     if not rows and max_new_runs != 1:
         raise ValueError("an empty output directory requires the mandatory --max-new-runs 1 smoke test")
     completed=[x for x in rows if x.get("transport_status")=="model_response"]
@@ -121,7 +159,7 @@ def run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
         usage_complete=bool(result.provider_usage) and all(complete_provider_usage(x) for x in result.provider_usage)
         provider_in=sum(int(x["prompt_tokens"]) for x in result.provider_usage) if usage_complete else None
         provider_out=sum(int(x["completion_tokens"]) for x in result.provider_usage) if usage_complete else None
-        transport_failure=result.halt_reason=="transport_error"
+        transport_failure=result.halt_reason in {"transport_error", "authentication_error"}
         attempt=1+max((x.get("attempt",1) for x in rows if x.get("run_id")==item["run_id"]),default=0)
         row={**item,**job,"attempt":attempt, "generation_settings":settings,"baseline_commit":lock["baseline_commit"],"lock_hash":verified["lock_hash"],"prompt_descriptor_hash":lock["prompts"][job["prompt_version"]],"run_date":manifest["started_at"],
              "decision_record":record,"trace":result.trace,"halt_reason":result.halt_reason,"write_count":result.write_count,"gate_result":record.get("gate_result") if record else None,"tool_order":tool_order(result.trace),"tool_calls":result.tool_calls,

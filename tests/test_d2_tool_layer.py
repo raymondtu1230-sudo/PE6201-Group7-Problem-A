@@ -65,8 +65,8 @@ class D2ToolLayerTests(unittest.TestCase):
   cases=(
    ('bad',valid,'blocked_invalid_claim_id'),
    ('CLM-8850',valid,'blocked_claim_mismatch'),
-   ('CLM-8842',{'decision':'invented','reason':'x','evidence_trail':[]},'blocked_decision_mismatch'),
-   ('CLM-8842',{'decision':'approve_in_principle'},'blocked_decision_mismatch'),
+   ('CLM-8842',{'decision':'invented','reason':'x','evidence_trail':[]},'blocked_invalid_decision_record'),
+   ('CLM-8842',{'decision':'approve_in_principle'},'blocked_invalid_decision_record'),
   )
   with tempfile.TemporaryDirectory() as tmp:
    path=Path(tmp)/'decisions.jsonl'; agent=ClaimAgent(log_path=path)
@@ -78,10 +78,10 @@ class D2ToolLayerTests(unittest.TestCase):
      self.assertFalse(path.exists())
    state=_State('CLM-8842','confirm',True,decision={'decision':'invented','reason':'x','evidence_trail':[]})
    result=agent.issue_decision_letter('CLM-8842',state.decision,decision_complete=True,state=state)
-   self.assertEqual('blocked_unsupported_decision',result['gate_result']); self.assertFalse(path.exists())
+   self.assertEqual('blocked_invalid_decision_record',result['gate_result']); self.assertFalse(path.exists())
    state=_State('CLM-8842','confirm',True,decision={'decision':'approve_in_principle','reason':'','evidence_trail':[]})
    result=agent.issue_decision_letter('CLM-8842',state.decision,decision_complete=True,state=state)
-   self.assertEqual('blocked_incomplete_decision',result['gate_result']); self.assertFalse(path.exists())
+   self.assertEqual('blocked_invalid_decision_record',result['gate_result']); self.assertFalse(path.exists())
  def test_valid_confirmed_run_writes_exactly_once_and_does_not_rebuild(self):
   with tempfile.TemporaryDirectory() as tmp:
    path=Path(tmp)/'decisions.jsonl'; result=ClaimAgent(log_path=path).run('CLM-8842',confirm=True)

@@ -76,7 +76,7 @@ class D1SmokeTests(unittest.TestCase):
     def test_malformed_and_unknown_actions_halt_safely(self):
         state = _State(case_id="X", autonomy="confirm", confirmed=True)
         self.assertFalse(self.agent.execute_action_block("not-json", state))
-        self.assertEqual("malformed_action", state.halt_reason)
+        self.assertEqual("malformed_json", state.halt_reason)
         state = _State(case_id="X", autonomy="confirm", confirmed=True)
         self.assertFalse(self.agent.execute_action_block('{"tool":"erase_database","arguments":{}}', state))
         self.assertEqual("unknown_tool", state.halt_reason)
