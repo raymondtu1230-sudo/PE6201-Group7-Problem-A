@@ -32,7 +32,7 @@ The executable descriptor block is `TOOL_DESCRIPTORS` in `src/claim_agent.py`; i
 
 **Poka-yoke changes.** (1) `check_coverage` has one unambiguous policy key; removing the old member-or-policy alternative makes accidental precedence/wrong-policy resolution impossible. (2) strict ISO date validation prevents lexicographic authorisation decisions on malformed dates. (3) the literal `decision_complete=true` gate makes a premature/empty simulated write impossible.
 
-Both `get_claim` shapes remain selectable with `descriptor_version=v1|v2` without duplicating the agent. Profiling all 50 claims selected it as the rewrite target: v1 totals 21,762 characters (mean 435.24, max 733); v2 totals 20,482 (mean 409.64, max 605). V2 retains the authoritative claim plus explicit matched/differing field arrays and exact-match flag, removes repeated derived date/count fields, adds `shape_version`, and remains bounded/auditable. See `results/d2/observation_profile.json`.
+Both `get_claim` shapes remain selectable with `descriptor_version=v1|v2` without duplicating the agent. Profiling all 50 claims selected it as the rewrite target: v1 totals 20,215 characters (mean 404.30, max 679); v2 totals 19,015 (mean 380.30, max 559). V2 retains the authoritative claim plus explicit matched/differing field arrays and exact-match flag, removes repeated derived date/count fields, adds `shape_version`, and remains bounded/auditable. See `results/d2/observation_profile.json`.
 
 ## D2(c): execution strategy and dependencies
 
@@ -57,5 +57,5 @@ explicit deterministic approximation `ceil(UTF-8 compact-JSON bytes / 4)` for ev
 v1/v2 `get_claim` result. This is an approximate byte-ratio method, not a provider
 tokenizer. `versioned_full_scorer.json` runs both versions through the unchanged D4
 `score_trial` contract over all 70 trials, and `descriptor_guardrails.json` compares the
-14 scripted guardrail cases for both versions. Exact provider token totals and a
+15 scripted guardrail cases for both versions. Exact provider token totals and a
 same-model live v1/v2 pass-rate comparison remain pending until controlled D5.

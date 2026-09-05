@@ -1,8 +1,12 @@
 import json
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
+from scripts import run_guardrail_checklist as checklist
 from src.claim_agent import ClaimAgent, _State
 
 
@@ -142,7 +146,7 @@ class D3GuardrailTests(unittest.TestCase):
                 self.assertEqual(0, state.write_count)
                 self.assertFalse(path.exists())
 
-    def test_hostile_unsafe_variants_are_routed_and_not_written(self):
+    def test_hostile_unsafe_variants_are_blocked_and_not_written(self):
         variants = [self.valid(case_id="CLM-8941"), self.valid("escalate", None, "CLM-8941"), self.valid("escalate", "wrong", "CLM-8941")]
         for record in variants:
             with self.subTest(record=record), tempfile.TemporaryDirectory() as tmp:
@@ -173,6 +177,21 @@ class D3GuardrailTests(unittest.TestCase):
             state = _State("CLM-8941", "act", False, decision=record)
             result = agent.issue_decision_letter("CLM-8941", record, True, state=state)
         self.assertTrue(result["written"])
+
+    def test_documented_guardrail_command_reproduces_complete_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result_path = Path(tmp) / "guardrail_checklist.json"
+            output = io.StringIO()
+            with patch.object(checklist, "RESULT_PATH", result_path), redirect_stdout(output):
+                status = checklist.main()
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(0, status)
+        self.assertEqual({"passed": 15, "total": 15, "hostile_cases": 5},
+                         payload["summary"])
+        self.assertIn("Passed: 15/15", output.getvalue())
+        v1_rows = checklist.run_checklist("v1")
+        self.assertEqual(15, len(v1_rows))
+        self.assertTrue(all(item["passed"] for item in v1_rows))
 
 
 if __name__ == "__main__":
