@@ -48,7 +48,7 @@ Both `get_claim` shapes remain selectable with `descriptor_version=v1|v2` withou
 
 Parallel mode batches coverage lines and the independent hospital read after claim/policy, then batches independent required authorisations. It can waste a hospital call when later coverage requests a document or detects hostile content, and it removes the useful per-line stop/reconsider point. Sequential preserves those model decision points at additional turns/tokens.
 
-Over 70 trials (40 ordinary once, 10 negative three times), the committed scripted results report approximate token estimates including system/base text, the complete descriptor block, and accumulated history on every turn. Provider pricing is zero for the local planner, so estimated cost is `$0.00`. Live same-cheap-model v1/v2 and sequential/parallel provider-usage measurements remain pending for D5; actual provider usage must replace approximations then.
+Over 70 trials (40 ordinary once, 10 negative three times), the committed scripted results report approximate token estimates including system/base text, the complete descriptor block, and accumulated history on every turn. Provider pricing is zero for the local planner, so estimated cost is `$0.00`. The live same-cheap-model v1/v2 comparison remains pending for D5. The sequential/parallel comparison is the scripted measurement required by D2(c); it does not require an additional paid battery. D5 provider-measured usage supplies the live cost evidence, while the scripted estimates remain explicitly labelled as estimates.
 
 ## Pre-D5 descriptor evidence
 

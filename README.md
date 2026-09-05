@@ -47,7 +47,7 @@ jupyter nbconvert --to notebook --execute D1_AGENT_BUILD.ipynb \
 
 `make_fixtures_A.py` preserves all teacher-shipped rows and adds new rows only in
 the supplied `EXTRA_*` sections. The current frozen D4 set contains **50 cases:
-15 teacher-supplied cases plus 35 student-added cases**. The latest permitted range is **30–50 cases**, so 50 is the permitted upper limit. Ten cases are negative and the schedule contains 70 trials. Running the fixture builder produces 50 isolated claims in
+15 teacher-supplied cases plus 35 student-added cases**. The teacher's later announcement recommends **50+ total cases (35+ additions)**, superseding the earlier brief's 30–50 range. Our 50-case set meets that recommendation; 50 is not a newly imposed maximum. Ten cases are negative and the schedule contains 70 trials. Running the fixture builder produces 50 isolated claims in
 `data_A/`. `expected_outcomes_A.json` contains one predeclared label per claim:
 40 `approve_in_principle` cases and 10 negative cases (`request_document` or
 `escalate`). Ordinary cases use one trial and negative cases use three, for 70

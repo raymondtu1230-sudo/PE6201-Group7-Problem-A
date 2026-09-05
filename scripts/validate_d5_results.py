@@ -57,9 +57,20 @@ def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
     queue=json.loads((directory/"judgement_queue.json").read_text()); annotations=json.loads((directory/"human_review_annotations.json").read_text()); validate_annotations(queue,annotations)
     judged_cases={x["case_id"] for x in completed if labelmap[x["case_id"]].get("grading_method","code")=="judged"}
     if {x.get("case_id") for x in queue}!=judged_cases or len(queue)!=len(judged_cases): raise ValueError("judgement queue is not one-per-judged-case")
-    if any(not isinstance(x.get("must_record"),list) or not isinstance(x.get("candidate_reason"),str) or
+    if any(not isinstance(x.get("must_record"),list) or
+           not (x.get("candidate_reason") is None or isinstance(x.get("candidate_reason"),str)) or
            not isinstance(x.get("candidate_record_reference"),str) or not x.get("run_id") or
            x.get("review_criterion") is None for x in queue): raise ValueError("incomplete judgement queue evidence")
+    for item in queue:
+        candidates=[row for row in completed if row["case_id"]==item["case_id"]]
+        candidate=candidates[-1]
+        record=candidate.get("decision_record") or {}
+        if (item["run_id"]!=candidate["run_id"] or
+                item.get("candidate_reason")!=record.get("reason") or
+                item["candidate_record_reference"]!=f"trials.jsonl#run_id={candidate['run_id']}"):
+            raise ValueError("judgement queue does not match retained candidate")
+        # An absent candidate is a scored failure, not corrupt evaluation data.
+        # It remains pending for truthful review and can never pass the code checks.
     amap={(x["run_id"],x["case_id"]):x for x in annotations}; finals=[]
     for row in completed:
         passed=row["automatic_pass"]
