@@ -1,6 +1,6 @@
 {
   "format_version": 2,
-  "baseline_commit": "7e1657220534de48d48fa1c639ee75903469204b",
+  "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
   "files": {
     "data_A/claims.json": "53f16c1692261864bcb12bfaf73eeb6a9b96ff0ff97d19aa6f1d5db2324bf977",
     "data_A/decided_claims.json": "326263d37a5ffc694fff078a560e47cfc46f8702a808e4a6fe5f567117a66484",
@@ -12,15 +12,15 @@
     "data_A/required_documents.json": "359f34fb5e66138897ee77beb6130f991360780cfee02a5b3279171c9921c236",
     "make_fixtures_A.py": "626e491ddf1e9629a72fe436db2cb921595be458e0860bd228957551eaa9805d",
     "expected_outcomes_A.json": "ff36049ec16d016b44b9e59ee9c2ef0d493b93a420dfc3113b8f462113fea6c0",
-    "src/claim_agent.py": "def3c8f7cb3b3087c7c66af3d446c19c2aa712c70af4e4f210ed257f32e0f649",
-    "src/live_backend.py": "64758c580e069baa12d55e02e4bdf612053338c43f5913bd51d7cd47e1320e53",
+    "src/claim_agent.py": "e265b1b04c0a0cd120f6dbeeb73bd088e8eaafd25336b2dd73ba5ddf393ecdfe",
+    "src/live_backend.py": "3d6f5ad35d81569f956a273a8a61a1bf6d5e1b27eb574ca954a23f87e9c9c17d",
     "src/d4_evaluation.py": "40bf03a10c49b6a19f02cc9d44366bea240fd2ad5603955bf627fa7ec0ae42dd",
-    "scripts/run_d5_live.py": "0bc1a8f040497b37b38f8514fdd6d931e3c8152f5e802251843d222f2be5451e",
-    "scripts/d5_safety.py": "6e11f4b60f83118130352fd2693402c469bd98a9c7caf164674b767aa4fb1955",
+    "scripts/run_d5_live.py": "2c67e92a65367dfb0773a2406434a9f7c83600efd2d032ba9819c59f4055fb79",
+    "scripts/d5_safety.py": "a888d8f600f7700240f9e422b276cd5178b177d57e5c2c45dcb7f27b1ead6cc6",
     "scripts/validate_d5_results.py": "8b20c44ff58353606e72fb6b6e7ce86bf79c1a2f087e8bfd78e3fa40e5f32ffd",
     "scripts/aggregate_d5_results.py": "ede7de26bd2d60c07536d7fcc7b9832117967148b37e25f56f71c82ae339dd79",
     "scripts/create_d5_lock.py": "ed742ed77f2a9f8ad1c04fc5ac542d6538620a35e20110170c45e1ac616a86eb",
-    "config/d5_jobs.json": "f38933afcfdeba45b4b33d07499d8c6e5a94cde2ccc0edb5b2047169627f44ee"
+    "config/d5_jobs.json": "2c5784cb53cde067e294994965ca9dedb3171151b6023fd76e8640bcf701a293"
   },
   "prompts": {
     "v1": "c8298c0c8fcb555484c2a0f10b65aeaa02f49fbe04b2869110ae5db2a1463e78",
