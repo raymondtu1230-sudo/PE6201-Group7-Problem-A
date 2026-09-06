@@ -1,25 +1,22 @@
-# D5 cross-model audit and retained-GPT decision
+# D5 cross-model interface audit
 
-Decision date: 6 September 2026. Starting main: `3c7a25dda028aafbbf4620e7ff09b03e391c0e35`.
-This note supersedes the earlier unresolved-comparison and individual full-job run order
-in the readiness notes. Those notes remain evidence of what was known at their dates.
+Audit date: 6 September 2026. Starting main: `3c7a25dda028aafbbf4620e7ff09b03e391c0e35`.
+The repair and evidence were merged in PR #31; the independent lock was published
+in PR #32. This note records interface evidence. The current five-job collection
+sequence is in [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md).
 
-## Selected scope
+## Collection scope
 
-The user selected retention of TU WEIKANG's complete GPT r6 with explicit disclosure,
-and authorized this audit, the necessary bounded repair, GitHub upload and release.
-No paid GPT rerun is authorized. The user also requested a full offline 70-trial
-rehearsal of job 1, so it is included alongside all four remaining jobs. If a new GPT
-collection is later required, it must use a separate directory and the final lock.
-Jobs 2–5 will use the new release lock; r6 keeps its
-original baseline, settings, trial files and confirmed reviews. A new lock does not
-convert r6 into a run of that lock.
+All five configured jobs have a full offline 70-trial rehearsal. The formal
+comparison will use five new collections on one exact frozen checkout and the
+published lock. Jobs 1–4 share v2; jobs 4 and 5 form the fixed-Gemini v2/v1 pair,
+as required by Assignment D5(b), page 14. Every member runs the same 50-case,
+70-trial schedule with their own key. No new-lock live collection has started.
 
-The Assignment, D5(b), page 14 explicitly requires the same commit and v2 prompt.
-This selected approach deviates from that wording. Disclosure is not instructor
-approval, and no approval has been obtained. Any cross-model table must show each
-baseline and this limitation. Do not describe it as a strictly controlled model-only
-comparison. The Gemini v1/v2 pair will share the new lock and settings.
+GPT r6 keeps its original baseline, settings, trial files and confirmed reviews
+as historical evidence, outside the new formal comparison. The
+[result index](results/d5/README.md) explains the additional collection and accounts
+for earlier spending. A release change does not change the identity of past calls.
 
 ## Five-job evidence matrix
 
@@ -100,11 +97,12 @@ configuration rather than tune individual models after observing scores. Reasoni
 defaults and provider routing are not fully controlled across families. Retain measured
 reasoning/cached token details when returned; do not call every setting equivalent.
 
-The strict existing aggregator accepts one lock. It must continue to reject r6 mixed
-with new-lock directories. Later, validate r6 using its historical runtime/lock and
-jobs 2–5 using the new one, then present per-model metrics in a disclosed comparison
-table with baseline/settings columns. Never edit manifests or relax validation to
-force a common identity. r3/r5 pilots remain outside r6's pass-rate denominator.
+The strict existing aggregator accepts one lock. The formal table will contain
+only the five designated `r7` directories after complete collection and review.
+Old r3/r5/r6 are outside that denominator. The new GPT result will be used even if
+its score is lower than r6; there is no selection of the better of two runs.
+Historical r6 can be validated in its original release checkout with its original
+lock. Its raw files and scores remain unchanged.
 
 ## Validation and limits
 

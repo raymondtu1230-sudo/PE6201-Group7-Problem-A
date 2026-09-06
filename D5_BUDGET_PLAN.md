@@ -2,9 +2,9 @@
 
 ## Agreed scope
 
-The user accepted a common USD 0.08 per-trial and USD 2.80 per-job stopping policy
-and asked to reserve API credit for other assignments. The user believes each
-member's original allowance is USD 10; no actual key balance was checked.
+The common policy is USD 0.08 per trial and USD 2.80 per job, reserving API credit
+for other assignments. The planning allowance is USD 10 per member across the
+course; no actual key balance has been checked.
 Plan for D5 to stay around/below USD 3 per person, leaving roughly USD 7 of an
 otherwise untouched USD 10 allocation. This is a planning envelope, not a claim
 about anyone's current balance or a target to spend the full amount.
@@ -55,6 +55,15 @@ models and the v1 prompt may use different inputs, outputs and tool turns.
 | Haiku, standard rate | 1.00 / 5.00 | $1.556622 | $2.709182 |
 | Gemini, standard rate, each job | 0.10 / 0.40 | $0.146243 | $0.238448 |
 
+For the new GPT job, the previous token totals cost USD 0.92082425 at the
+[GPT-5 Mini](https://openrouter.ai/openai/gpt-5-mini) reference list rates of
+USD 0.25/2.00 per million input/output tokens without caching. The observed r6
+charge with its actual caching was USD 0.73754105. Thus USD 0.74–0.92 is a useful
+reference for another 70 trials, not a forecast or an upper bound. Reasoning tokens
+remain included in output cost. Combined with the rows above, the five new jobs
+have a reference total around USD 2.78–4.42; individual keys still have separate
+allowances and cannot pool their budgets.
+
 Price pages checked 6 September 2026: [Qwen](https://openrouter.ai/qwen/qwen3-30b-a3b-instruct-2507),
 [Haiku](https://openrouter.ai/anthropic/claude-haiku-4.5),
 [Gemini](https://openrouter.ai/google/gemini-2.5-flash-lite).
@@ -66,7 +75,10 @@ TU WEIKANG's recorded r6 charge is USD 0.73754105. Preserved r3 and r5 charges
 are USD 0.01107375 and USD 0.06565725 respectively. Total known archived D5
 spending is approximately **USD 0.81427205**, before any other assignment usage.
 The allowance is not reset when a new branch, version or directory is created.
-These pilot charges remain separate from formal r6 performance metrics.
+Old r3/r5 are pilots; r6 was the first complete GPT collection. All three are
+historical costs outside the new formal comparison. Adding the new GPT reference
+would bring TU WEIKANG's known D5 total to approximately USD 1.55–1.74, excluding
+other coursework. Verify actual remaining credit before starting.
 
 ## Offline verification and boundary repair
 
@@ -84,29 +96,25 @@ at trial positions 6, 35 and 70 retain their charges and stop the batch.
 
 Full regression ran with real keys removed, networking denied and a 300-second
 timeout: **147 tests passed in 128.957 seconds; 0 network attempts and 0 paid
-model calls.** Compilation and `git diff --check` also pass. The retained release
-lock still correctly rejects the changed runtime/configuration; original results,
-fixtures, scorer, prompts and the lock remain unchanged.
+model calls.** Compilation and `git diff --check` also passed. At that repair
+stage, the old release lock correctly rejected the changed runtime/configuration.
+PR #32 subsequently published the replacement lock; see the current runbook.
+The later interface audit passed 31 selected tests, with its source hashes recorded
+in `results/d5-readiness/cross_model_audit.json`.
 
 ## Release and execution order
 
-This is a configuration/budget repair on top of merged PR #29, main
-`7d1be4a59cde83661dc6171c0a20f5cc00651f91`. It does not run any paid test or change
-raw results, confirmed judgements, fixtures, model assignments or the old lock.
+The budget repair was merged in PR #30, the cross-model audit in PR #31, and the
+independent lock in PR #32. The formal comparison now plans five new collections
+on one exact checkout commit and that lock, including GPT. Use
+[D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for the designated `r7` directories.
 
-The subsequent selected decision in [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
-retains GPT r6 with explicit baseline/settings disclosure; it does not claim teacher
-approval of the same-commit deviation. No paid GPT rerun is currently authorized,
-but GPT is included in the full offline rehearsal in case one is later required.
-After the audit/repair is merged, create the lock from that clean merged baseline
-and publish it through a separate lock-only PR. Verify it before any paid request.
-
-For the pending cohort, use each assigned member's own key and designated
-directory. After keyless preflight, inspect the first scheduled trial of every
-pending job (Haiku, Qwen, Gemini v2, Gemini v1). Only after all pass the integration
-checkpoint, append four per job. Review all four jobs' traces and costs before
-any member starts the remaining 65. These five responses are
-part of that job's 70, not five extra tests. Keep all ordinary model failures.
+After keyless preflight and each member's private balance/key checks, inspect the
+first scheduled trial of every job in this order: Haiku, Qwen, Gemini v2, Gemini
+v1, GPT. Only after all five pass the integration checkpoint, append four per job.
+Review all five jobs' traces and costs before any member starts the remaining 65;
+GPT's remaining 65 run last. These first five responses are part of each job's
+70, not extra tests. Keep all ordinary model failures.
 If projected cost exceeds the available budget or a shared system error appears,
 stop for review instead of spending through all 70 or retrying successful responses.
 

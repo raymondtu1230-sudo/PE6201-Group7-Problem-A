@@ -1,21 +1,22 @@
 # D5 live-model battery: current operating sequence
 
-Updated 6 September 2026. The interface audit and decision record are in
+Updated 6 September 2026. The interface audit and evidence are in
 [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md). This sequence replaces the old
 r3/r5 examples; those results remain historical evidence, not continuation targets.
 
-## Retained GPT and pending jobs
+## Five new collections on one version
 
-TU WEIKANG's r6 remains at `results/d5/job1-tu-weikang-r6`: 70 trials, 33 final
-passes / 37 failures, USD 0.73754105, six confirmed reviews. Keep its original lock,
-manifest and data. No paid GPT rerun is currently authorized. All five jobs have
-full offline rehearsals, including GPT if a later collection becomes necessary.
-The user selected retention with explicit version/settings disclosure; this is
-not instructor approval of the deviation from the same-commit D5(b) requirement.
+All five jobs below will collect new results under the published lock and one
+exact checkout commit. Each job is still pending. TU WEIKANG's r6 remains at
+`results/d5/job1-tu-weikang-r6` as a completed historical collection, with its
+original manifest, 70 responses and six confirmed reviews. The
+[result index](results/d5/README.md) explains its role and separate costs.
+The final comparison will use the new GPT run regardless of whether it scores
+higher or lower than r6.
 
 | Job | Member | Model | Prompt | New collection directory |
 | --- | --- | --- | --- | --- |
-| 1 | TU WEIKANG | `openai/gpt-5-mini` | v2 | `results/d5/job1-tu-weikang-r7` — reserved, only if a new collection is later authorized |
+| 1 | TU WEIKANG | `openai/gpt-5-mini` | v2 | `results/d5/job1-tu-weikang-r7` |
 | 2 | CHEN KE | `qwen/qwen3-30b-a3b-instruct-2507` | v2 | `results/d5/job2-chen-ke-r7` |
 | 3 | KANG XINGYAO | `anthropic/claude-haiku-4.5` | v2 | `results/d5/job3-kang-xingyao-r7` |
 | 4 | YAO FANGXUAN | `google/gemini-2.5-flash-lite` | v2 | `results/d5/job4-yao-fangxuan-r7` |
@@ -29,22 +30,22 @@ be equally effective across providers; see the audit's interface limitations.
 
 ## Release and local state
 
-The runtime/audit PR is merged first. A maintainer then uses a clean checkout of
-that exact merged commit to generate the lock and publishes only `D5_LOCK.json`
-in a separate PR. The lock records the baseline, critical file hashes, prompts and
-schedule. Never edit hashes or regenerate a lock just to make a member's checkout
-pass. A documentation-only or lock-only descendant can verify against the baseline.
+PR #31 merged the runtime/interface audit; PR #32 independently published
+`D5_LOCK.json`. The published values are:
 
-Only the release maintainer runs generation, from the clean merged baseline:
+- Runtime baseline: `1dc27cfbe257901c8e38243acb420f154a1d5664`.
+- Lock hash: `146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0`.
 
-```bash
-python3 scripts/create_d5_lock.py --output D5_LOCK.json
-python3 scripts/create_d5_lock.py --verify D5_LOCK.json
-```
+The lock covers all critical code, configuration, data, prompts and the schedule.
+This preparation changes documentation and evidence only, so the published lock
+continues to apply. Members verify this lock; they do not generate another one.
 
-The runtime PR alone is not a paid release: the old lock must reject it until the
-separate replacement lock is merged. After release, members verify the committed
-lock. They do not generate their own locks or use a temporary test lock.
+The maintainer's release handoff supplies the **full merge SHA of the preparation
+PR**. That is the common checkout commit for all five jobs. A lock verifies runtime
+identity but permits documentation-only descendants; it does not by itself prove
+that every member checked out the same HEAD. Record and compare the full HEAD
+separately. Freeze that chosen commit throughout the cohort, including resumptions;
+do not pull a moving `main` between members or stages.
 
 The assistant's checkout is separate from a member's Codespaces. Give the operator
 one command group at a time and wait for the complete output. The first group is
@@ -55,20 +56,30 @@ git status --short --branch
 ```
 
 Inspect local changes before any synchronization. Preserve every result and local
-edit; do not use `git reset --hard`. On a confirmed clean checkout, synchronize
-`main` with a fast-forward pull, then inspect the full HEAD and verify the lock:
+edit; do not use `git reset --hard`. After reviewing the output, fetch the repository
+and check out the exact handoff commit in detached mode, or use a separate clean
+worktree if existing work must remain in place. The maintainer supplies that command
+with the actual SHA after the status check. Then inspect HEAD and verify the lock:
 
 ```bash
 git rev-parse HEAD
 python3 scripts/create_d5_lock.py --verify D5_LOCK.json
 ```
 
-Compare the baseline and lock hash with the merged lock-only PR. Confirm that the
+Compare HEAD with the common handoff SHA and the baseline/hash with the values
+above. Save this keyless verification output with the member's execution evidence;
+the runtime manifest records the baseline, not a separate checkout SHA. Confirm that the
 member's selected new directory is unused before the first trial. Subsequent stages
 must use that same directory and immutable manifest. Do not create a different
 copy on another machine to run the same job concurrently.
 
 ## Keyless checks and private key entry
+
+The release-preparation evidence is in
+[`results/d5-readiness/start_preparation.json`](results/d5-readiness/start_preparation.json).
+It binds the existing five-job simulation evidence to the unchanged runtime,
+checks the published lock and all five unused output paths, and checks the
+offline summary-refresh command. It is not a member's Codespaces or account check.
 
 For the current member, select the exact job/directory from the table. This example
 is the first cohort member, Haiku; it is not authorization to start paid execution:
@@ -81,12 +92,17 @@ python3 scripts/run_d5_live.py --preflight --job "$D5_JOB" --output "$D5_OUTPUT"
 
 Preflight is keyless, read-only and zero-network. It checks the real lock, schedule,
 settings, dialogue contract and existing output; it does not prove account credit,
-model access or provider availability. For an empty directory it must show zero
-completed and 70 pending trials. A plan-only run without `--preflight` is not this
+model access or provider availability. For an unused directory it must show
+`existing_attempts=0` and `remaining_unattempted_trials=70`.
+A plan-only run without `--preflight` is not this
 verification. No real result directory is created by the release audit.
 
-Before paid execution, the current member privately checks their account balance
-and earlier D5 charges. Each member uses their own key. A manifest's member name
+Before paid execution, the current member privately checks their account balance,
+key allowance and earlier D5/course charges using their own OpenRouter account or
+the read-only `/api/v1/key` endpoint. A null key limit is not an unlimited account
+balance. Record only member, available amount, earlier spending and check time;
+never the key. Use the [budget references](D5_BUDGET_PLAN.md) to assess headroom.
+Each member uses their own key. A manifest's member name
 and an existing environment variable cannot establish who owns a key. On a shared
 terminal clear the previous member's variable, then use a hidden input:
 
@@ -102,11 +118,17 @@ multi-model shell loop using one member's key. Clear the variable when finished.
 
 ## Cohort checkpoints: 1, then 4, then 65
 
-The pending cohort order is Haiku (job 3), Qwen (job 2), Gemini v2 (job 4), Gemini
-v1 (job 5). Complete and inspect the first trial of **every** pending job before
-any job adds four. Complete and inspect all four five-trial sets before **any**
-job starts its remaining 65. If GPT is later newly authorized, put it through the
-same checkpoints under the released lock. Do not automatically restart r6.
+The cohort order is Haiku (job 3), Qwen (job 2), Gemini v2 (job 4), Gemini v1
+(job 5), GPT (job 1). Complete and inspect the first trial of **all five jobs**
+before any job adds four. Complete and inspect **all five five-trial sets** before
+any job starts its remaining 65. Finish the other four remaining batches before
+GPT's remaining 65. The new GPT job uses `r7`; r6 is never a continuation target.
+
+These are separate reviewed command groups, not a script to run from top to
+bottom. The runner enforces the first single trial and the supplied batch limit;
+it cannot know whether other members' separate machines passed a cohort checkpoint.
+The maintainer must check every member's retained evidence before advancing a stage.
+Recheck the exact HEAD, lock, same job/output and available budget before each stage.
 
 Only after the current member's environment/key/budget checks and authorization,
 run the first scheduled trial:
@@ -183,25 +205,67 @@ cannot detect duplicated jobs in different directories or different machines.
 
 ## Review and final comparison
 
-Six judged cases need truthful review annotations with substantive notes, one per
-case. Pending reviews are not passes. Reviews cannot override failed code checks.
+Six judged cases in each new job need truthful review annotations with substantive
+notes, one per case. New GPT outputs require new review; do not copy r6's approvals
+or rejections. Pending reviews are not passes. Reviews cannot override failed code checks.
 Test-fixture annotations in the simulations are not human reviews or experiment
 results. There is no paid judge model in this plan.
 
-After all 70 completed run IDs are already present and the required annotations
-are added, an invocation with `--max-new-runs 1` refreshes the summary without new
-model calls. Verify all 70 are present before using that procedure. Run final
-validation without `--allow-incomplete`:
+Stop all runners before editing annotations. After all 70 completed model responses
+are present and annotations are added, a maintainer can refresh derived files
+**offline**, with no live runner entry. The command uses the existing directory
+lock and rejects unresolved request checkpoints:
+
+```bash
+python3 - "$D5_OUTPUT" <<'PY'
+import json
+import sys
+from pathlib import Path
+from scripts.d5_safety import ACTIVE, exclusive_output
+from scripts.run_d5_live import load_labels, rebuild_reviews, write_summary
+from scripts.validate_d5_results import validate
+output = Path(sys.argv[1])
+if not output.is_dir():
+    raise ValueError('Expected an existing completed result directory')
+with exclusive_output(output):
+    if (output / ACTIVE).exists():
+        raise ValueError('Resolve the retained request checkpoint before refresh')
+    info = validate(output, Path('D5_LOCK.json'), allow_incomplete=True)
+    rows = [json.loads(line) for line in (output / 'trials.jsonl').read_text().splitlines()]
+    completed = {row['run_id'] for row in rows if row.get('transport_status') == 'model_response'}
+    if len(completed) != 70 or not info['billing_complete']:
+        raise ValueError('Collection or billing incomplete')
+    labels, _ = load_labels()
+    labels = {label['case_id']: label for label in labels}
+    rebuild_reviews(output, rows, labels)
+    write_summary(output, rows, labels)
+PY
+```
+
+This preserves original responses and existing annotations. Run final validation
+without `--allow-incomplete`; it rejects missing reviews or incomplete billing:
 
 ```bash
 python3 scripts/validate_d5_results.py "$D5_OUTPUT" --lock D5_LOCK.json
 ```
 
-Aggregate only complete new-lock directories with the existing strict aggregator.
-Do not pass r6 to the new lock, rewrite its manifest, or weaken the validator.
-For the selected retained-GPT route, validate r6 in a separate historical checkout
-using its original release and lock; put its metrics beside the new results in a
-clearly labelled baseline/settings comparison table. State the same-commit deviation.
-If a new GPT run is later authorized and completed, it can join the same-lock
-aggregation while r6 remains separately preserved. D6 analysis, D7's two free
-fault-injection demonstrations, final report and video still require completion.
+After each of the five new directories passes final validation, run the explicit
+five-directory aggregation. Do not use a wildcard that could include historical
+results or omit a missing member:
+
+```bash
+python3 scripts/aggregate_d5_results.py --lock D5_LOCK.json \
+  results/d5/job1-tu-weikang-r7 \
+  results/d5/job2-chen-ke-r7 \
+  results/d5/job3-kang-xingyao-r7 \
+  results/d5/job4-yao-fangxuan-r7 \
+  results/d5/job5-huang-yihan-r7
+```
+
+The resulting formal comparison has four v2 model families and the fixed-Gemini
+v1/v2 pair. Keep historical collection costs separately in the spending ledger.
+D6 still needs dated list-price economics using measured tokens, with caching and
+reasoning treatment explained; no price fallback is enabled in the live config,
+so a missing provider bill stops instead of being replaced by an estimate.
+D7's two free fault-injection demonstrations, final report, video, self-appraisal
+and a matching repository/code ZIP still require completion.
