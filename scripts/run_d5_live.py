@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from src.claim_agent import ClaimAgent, assert_decision_contract, normalize_action
-from src.live_backend import assert_live_message_contract,validate_live_settings
+from src.live_backend import assert_live_message_contract,validate_live_settings,valid_token_count
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
 from scripts.d5_safety import ACTIVE,TrialJournal,check_output,durable_json,exclusive_output,known_cost,probe_writes
@@ -89,10 +89,13 @@ def tool_order(trace:list[dict])->list[str]:
         order.extend(x.get("tool") for x in calls if isinstance(x,dict) and isinstance(x.get("tool"),str))
     return order
 def complete_provider_usage(item:dict)->bool:
-    return all(isinstance(item.get(k),(int,float)) and not isinstance(item.get(k),bool) and math.isfinite(item[k]) and item[k]>=0
-               for k in ("prompt_tokens","completion_tokens","cost"))
+    return (all(valid_token_count(item.get(k)) for k in ("prompt_tokens","completion_tokens"))
+            and isinstance(item.get("cost"),(int,float)) and not isinstance(item["cost"],bool)
+            and math.isfinite(item["cost"]) and item["cost"]>=0)
 def cost_evidence(usages:list[dict],model:str,pricing:dict)->tuple[float|None,str,dict|None]:
-    if usages and all(complete_provider_usage(x) for x in usages):
+    # A malformed token field does not erase a finite charge actually returned.
+    if usages and all(isinstance(x.get("cost"),(int,float)) and not isinstance(x["cost"],bool)
+                      and math.isfinite(x["cost"]) and x["cost"]>=0 for x in usages):
         costs=[x["cost"] for x in usages]
         return sum(costs),"provider_measured",{"per_call":costs}
     price=(pricing.get("models") or {}).get(model)
@@ -128,8 +131,11 @@ def inspect_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:in
     if rows:
         from scripts.validate_d5_results import validate
         validate(output,lock_path,allow_incomplete=True)
-        if any(row.get("cost_usd") is None or row.get("billing_complete") is False for row in rows):
-            raise ValueError("unresolved billing evidence; reconcile retained calls before further paid requests")
+        if any(row.get("cost_usd") is None or row.get("billing_complete") is False
+               or not row.get("provider_usage")
+               or any(not complete_provider_usage(item) for item in row["provider_usage"])
+               for row in rows):
+            raise ValueError("unresolved billing or token evidence; reconcile retained calls before further paid requests")
     attempted={row["run_id"] for row in rows}
     remaining=[item for item in planned_runs() if item["run_id"] not in attempted]
     return {"mode":"preflight","valid":True,"network_requests":0,**info["verified"],

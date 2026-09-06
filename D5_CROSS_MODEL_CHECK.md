@@ -1,5 +1,11 @@
 # D5 cross-model interface audit
 
+**Historical PR #31 audit.** [D5_FINAL_RISK_CHECK.md](D5_FINAL_RISK_CHECK.md)
+records the later full-suite rerun, additional reproduced faults and four runtime
+repairs. Its evidence supersedes the runtime hashes in `cross_model_audit.json`.
+The interface research below remains source evidence; PR #32's lock must be
+replaced after those repairs. Use the current runbook and latest lock-only release.
+
 Audit date: 6 September 2026. Starting main: `3c7a25dda028aafbbf4620e7ff09b03e391c0e35`.
 The repair and evidence were merged in PR #31; the independent lock was published
 in PR #32. This note records interface evidence. The current five-job collection

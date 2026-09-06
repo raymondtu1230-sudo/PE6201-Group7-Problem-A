@@ -66,7 +66,7 @@ class WireReplay:
         else:
             text = ClaimAgent(descriptor_version=task['descriptor_version']).call_model(state)
         payload = json.dumps({'id': f'fake-{len(self.requests)}', 'model': body['model'],
-            'choices': [{'message': {'content': text}}],
+            'choices': [{'message': {'role': 'assistant', 'content': text}}],
             'usage': {'prompt_tokens': 1, 'completion_tokens': 1, 'cost': self.cost}}).encode()
         class Response:
             def __enter__(self): return self

@@ -1,7 +1,8 @@
 # D5 live-model battery: current operating sequence
 
-Updated 6 September 2026. The interface audit and evidence are in
-[D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md). This sequence replaces the old
+Updated 6 September 2026. The latest full regression and additional fault evidence
+are in [D5_FINAL_RISK_CHECK.md](D5_FINAL_RISK_CHECK.md); the earlier interface
+review is in [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md). This sequence replaces the old
 r3/r5 examples; those results remain historical evidence, not continuation targets.
 
 ## Five new collections on one version
@@ -30,18 +31,18 @@ be equally effective across providers; see the audit's interface limitations.
 
 ## Release and local state
 
-PR #31 merged the runtime/interface audit; PR #32 independently published
-`D5_LOCK.json`. The published values are:
-
-- Runtime baseline: `1dc27cfbe257901c8e38243acb420f154a1d5664`.
-- Lock hash: `146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0`.
+PR #32 published the first replacement lock. The subsequent final risk check
+changes four protected runtime files, so that lock must reject those changes.
+Merge the tested repair first, generate a replacement from that clean merged
+commit, and publish it in an independent **lock-only PR** before paid execution.
+The committed `D5_LOCK.json` is the source for the runtime baseline and lock hash;
+the release handoff identifies its lock-only PR and exact full merge SHA.
 
 The lock covers all critical code, configuration, data, prompts and the schedule.
-This preparation changes documentation and evidence only, so the published lock
-continues to apply. Members verify this lock; they do not generate another one.
+Members verify the released lock; they do not generate one or copy an older hash.
 
-The maintainer's release handoff supplies the **full merge SHA of the preparation
-PR**. That is the common checkout commit for all five jobs. A lock verifies runtime
+The maintainer's release handoff supplies the **full merge SHA of that latest
+lock-only PR**. That is the common checkout commit for all five jobs. A lock verifies runtime
 identity but permits documentation-only descendants; it does not by itself prove
 that every member checked out the same HEAD. Record and compare the full HEAD
 separately. Freeze that chosen commit throughout the cohort, including resumptions;
@@ -66,8 +67,8 @@ git rev-parse HEAD
 python3 scripts/create_d5_lock.py --verify D5_LOCK.json
 ```
 
-Compare HEAD with the common handoff SHA and the baseline/hash with the values
-above. Save this keyless verification output with the member's execution evidence;
+Compare HEAD with the common handoff SHA and the baseline/hash with the committed
+lock from that release. Save this keyless verification output with the member's execution evidence;
 the runtime manifest records the baseline, not a separate checkout SHA. Confirm that the
 member's selected new directory is unused before the first trial. Subsequent stages
 must use that same directory and immutable manifest. Do not create a different
@@ -75,11 +76,12 @@ copy on another machine to run the same job concurrently.
 
 ## Keyless checks and private key entry
 
-The release-preparation evidence is in
-[`results/d5-readiness/start_preparation.json`](results/d5-readiness/start_preparation.json).
-It binds the existing five-job simulation evidence to the unchanged runtime,
-checks the published lock and all five unused output paths, and checks the
-offline summary-refresh command. It is not a member's Codespaces or account check.
+The latest test evidence and runtime hashes are in
+[`results/d5-readiness/final_risk_audit.json`](results/d5-readiness/final_risk_audit.json).
+The earlier `start_preparation.json` is the PR #33 snapshot: its old baseline/hash
+and runtime identity are historical, not the current release handoff. Its checks
+of the offline summary-refresh command and original result hashes remain recorded.
+Neither audit is a member's Codespaces or account check.
 
 For the current member, select the exact job/directory from the table. This example
 is the first cohort member, Haiku; it is not authorization to start paid execution:
@@ -144,6 +146,11 @@ response IDs, token usage and complete measured billing. Distinguish a model's
 wrong answer from a missing/misrepresented tool observation. A passing score is
 not required to pass this integration checkpoint; a protocol or billing problem
 must be resolved before continuing. Keep the failed response and its cost.
+
+The returned model string must match the assigned gateway model ID. A different
+snapshot or alias stops with the original returned identity and known charge;
+review the actual route before any continuation. Never silently relabel it.
+Missing IDs, invalid message roles and non-integral token counts also stop.
 
 After the first-trial checkpoint passes for the whole cohort, each member can
 append four in their own unchanged directory:

@@ -5,9 +5,10 @@ five jobs on one frozen release, including a new GPT job 1. All five new `r7`
 collections are pending. TU WEIKANG's completed r6 remains historical evidence:
 33/70 final passes, USD 0.73754105, with six human-confirmed judgements. See the
 [result index](results/d5/README.md) for its role and the separate cost ledger.
-The [five-job interface audit and 70-trial offline rehearsals](D5_CROSS_MODEL_CHECK.md)
-include GPT, Qwen, Haiku and both Gemini prompt versions. The runtime audit and
-separate release lock are merged. Follow the [current operating sequence](D5_MODEL_BATTERY.md):
+The [latest full regression and additional risk checks](D5_FINAL_RISK_CHECK.md)
+include GPT, Qwen, Haiku and both Gemini prompt versions. The additional repairs
+require a replacement lock from the clean merged runtime, published separately.
+Follow the [current operating sequence](D5_MODEL_BATTERY.md):
 pin one exact checkout commit for all five members, verify the published lock and
 each member's environment, then inspect all five first trials and all five
 five-trial batches before any remaining 65. GPT's remaining 65 run last.

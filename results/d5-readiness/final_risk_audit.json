@@ -1,0 +1,400 @@
+{
+  "historical_result_sha256": {
+    "results/d5/job1-tu-weikang/human_review_annotations.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang/job_manifest.json": "b5eaa21bcb0e5b7975de35f277af2d2c1e07c43758b60a7a7e55e1d91d9b8570",
+    "results/d5/job1-tu-weikang/judgement_queue.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang/summary.json": "78833af36cb7f5d7ddbb956deca91f668a835ef10aeb0e51becec469234221db",
+    "results/d5/job1-tu-weikang/trials.jsonl": "d25fb5e890b6854eeedca336fd5df68cd233316ffe5eeb5e208ac595375220eb",
+    "results/d5/job1-tu-weikang-r5/human_review_annotations.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang-r5/job_manifest.json": "668c1a812e46fdc8ef862ef6f808c994539653fb692863acdccffafb4134f11b",
+    "results/d5/job1-tu-weikang-r5/judgement_queue.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang-r5/summary.json": "78833af36cb7f5d7ddbb956deca91f668a835ef10aeb0e51becec469234221db",
+    "results/d5/job1-tu-weikang-r5/trials.jsonl": "41aa199741ebd031e01ef2d5b0bd8d548960fc1ade646fead89c9c09d7fb425e",
+    "results/d5/job1-tu-weikang-r6/REVIEW_RECORD.md": "47efb1aed1ebbb79d5627f8c740902539b2cb493633d340f119131f850a76f34",
+    "results/d5/job1-tu-weikang-r6/human_review_annotations.json": "d8bbfdb02e3ff718eb12c26a24c4da5d936e31eceab73db717fb6cb69c4c6709",
+    "results/d5/job1-tu-weikang-r6/job_manifest.json": "613bee7fea8b0221321f805962489ef14edf9e808bdb931bb0f16e3f6595fb6f",
+    "results/d5/job1-tu-weikang-r6/judgement_queue.json": "5504d66748c28abcbcc8e92181860d23ac8cd47d01bf1f613d10380f5d010be1",
+    "results/d5/job1-tu-weikang-r6/summary.json": "5d599f20e1b74d61e0edb4bd1d1a9a16339d89ebadd4dec25d155b2155c190c9",
+    "results/d5/job1-tu-weikang-r6/trials.jsonl": "350efe06feb89522a4042d9a035a32ab4d61d030510c8d20d16cc8dc108587bb"
+  },
+  "historical_results_unchanged": true,
+  "r6_returned_model_id_count": 359,
+  "r6_returned_models_match": true,
+  "r6_response_ids_nonempty": true,
+  "r6_token_counts_integral": true,
+  "r6_historical_message_roles": "not stored; not retrospectively verified",
+  "wire_requests": [
+    {
+      "job": 1,
+      "member": "TU WEIKANG",
+      "model": "openai/gpt-5-mini",
+      "prompt_version": "v2",
+      "family": "OpenAI GPT",
+      "price_tier": "tier_2",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 2,
+      "member": "CHEN KE",
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "prompt_version": "v2",
+      "family": "Qwen",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 3,
+      "member": "KANG XINGYAO",
+      "model": "anthropic/claude-haiku-4.5",
+      "prompt_version": "v2",
+      "family": "Anthropic Claude",
+      "price_tier": "tier_2",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 4,
+      "member": "YAO FANGXUAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v2",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 5,
+      "member": "HUANG YIHAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v1",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "0f7c884ef5ada35da88722390ac07fce395964c05d51039117c37723458f1060",
+      "native_tools_sent": false
+    }
+  ],
+  "outbound_requests_unchanged_from_pr31": true,
+  "prompt_hashes": {
+    "v1": "c8298c0c8fcb555484c2a0f10b65aeaa02f49fbe04b2869110ae5db2a1463e78",
+    "v2": "5e88a7adec6cee133cbc8693d07f33897b519f6186fcf2e0cee2c6a8114d1a17"
+  },
+  "old_lock_rejection": "locked file drift: src/claim_agent.py, src/live_backend.py, scripts/run_d5_live.py, scripts/validate_d5_results.py",
+  "network_attempts": 0,
+  "paid_model_calls": 0,
+  "r6": {
+    "trial_count": 70,
+    "maximum_trial_cost_usd": "0.02133245",
+    "total_cost_usd": "0.7375410500000000001",
+    "halt_reasons": {
+      "final": 66,
+      "malformed_action": 3,
+      "malformed_json": 1
+    },
+    "all_stored_code_checks_reproduced": true,
+    "sha256": {
+      "REVIEW_RECORD.md": "47efb1aed1ebbb79d5627f8c740902539b2cb493633d340f119131f850a76f34",
+      "human_review_annotations.json": "d8bbfdb02e3ff718eb12c26a24c4da5d936e31eceab73db717fb6cb69c4c6709",
+      "job_manifest.json": "613bee7fea8b0221321f805962489ef14edf9e808bdb931bb0f16e3f6595fb6f",
+      "judgement_queue.json": "5504d66748c28abcbcc8e92181860d23ac8cd47d01bf1f613d10380f5d010be1",
+      "summary.json": "5d599f20e1b74d61e0edb4bd1d1a9a16339d89ebadd4dec25d155b2155c190c9",
+      "trials.jsonl": "350efe06feb89522a4042d9a035a32ab4d61d030510c8d20d16cc8dc108587bb"
+    },
+    "role": "historical completed collection, excluded from new formal comparison",
+    "original_summary_status": "complete"
+  },
+  "audit_date": "2026-09-06",
+  "starting_commit": "7eda9537c1df1b433ed4bc1e24305fee0e193874",
+  "publication_stage": "tested runtime repair; separate post-merge lock release required",
+  "scope": "offline fault injection and full-suite regression; not live-provider or account validation",
+  "baseline_full_suite": {
+    "tests_run": 154,
+    "duration_seconds": 130.047,
+    "passed": true,
+    "network_attempts": 0,
+    "paid_model_calls": 0,
+    "log_sha256": "15319364ebf8442184ad8118966fb26f0477f5fc06380cc5ade4f1bfe0c48c40"
+  },
+  "new_reproduction_before_fix": {
+    "test_methods": 3,
+    "failing_subtests": 25,
+    "log_sha256": "ec08ad308e04c2a010c48d6126fec0776506bffb6bacee8f40becfd873f45c1f"
+  },
+  "intermediate_full_suite": {
+    "tests_run": 161,
+    "duration_seconds": 147.108,
+    "passed": false,
+    "network_attempts": 0,
+    "paid_model_calls": 0,
+    "log_sha256": "24b071916cf0d905a9f4827168648a46695f869d23c7ec4cfe8003fb4180dce8",
+    "failing_assertions": 12,
+    "cause": "legacy unresolved billing message-prefix assertions; exception and no-call stop were correct",
+    "repair": "retain unresolved billing prefix without changing stop behavior"
+  },
+  "final_full_suite": {
+    "tests_run": 161,
+    "duration_seconds": 148.581,
+    "passed": true,
+    "network_attempts": 0,
+    "paid_model_calls": 0,
+    "log_sha256": "2bd55e18772004d1258f608c3afb1b0907181153665b51fc09e21ebd02396883"
+  },
+  "final_test_log": "results/d5-readiness/final_risk_tests.txt",
+  "new_regression_test": "tests/test_d5_final_risks.py",
+  "new_regression_methods": 7,
+  "locked_runtime_sha256": {
+    "data_A/claims.json": "53f16c1692261864bcb12bfaf73eeb6a9b96ff0ff97d19aa6f1d5db2324bf977",
+    "data_A/decided_claims.json": "326263d37a5ffc694fff078a560e47cfc46f8702a808e4a6fe5f567117a66484",
+    "data_A/hospitals.json": "98476418fe9ca29e57e7f6c5341cafca3da8e528a95f38b1d9d9bfa7677daade",
+    "data_A/members.json": "1c0bd357e279dc66e919f80625d7c997364eb434126fba55d5afd339cd9822fc",
+    "data_A/policies.json": "693b1025cadcde9ca00489164c471aeee7579a1f5e8d42a8ca3ea1a37b9e80ac",
+    "data_A/preauthorisations.json": "701a4a81c794f4b807b12a92b1676da7c72a6454ea6aa571faa14081b5e18765",
+    "data_A/procedures.json": "e95fda382892bafc5fa693c6711057bcbfaba4a84d0dea813bb6fb16faf86ad8",
+    "data_A/required_documents.json": "359f34fb5e66138897ee77beb6130f991360780cfee02a5b3279171c9921c236",
+    "make_fixtures_A.py": "626e491ddf1e9629a72fe436db2cb921595be458e0860bd228957551eaa9805d",
+    "expected_outcomes_A.json": "ff36049ec16d016b44b9e59ee9c2ef0d493b93a420dfc3113b8f462113fea6c0",
+    "src/claim_agent.py": "9a20023959bd92d1fc77ec1bbaadfeb815e230878afe840c9c3b898fb7e47808",
+    "src/live_backend.py": "f0a06951a600bd4407e491db0e6322eb70a29c45125fdd3bc2aa90cd7f5f22bd",
+    "src/d4_evaluation.py": "40bf03a10c49b6a19f02cc9d44366bea240fd2ad5603955bf627fa7ec0ae42dd",
+    "scripts/run_d5_live.py": "32702e6932482bf4a743bd1353a53a1c8b6255b39a39da0d83bd8d4df0ccb7c1",
+    "scripts/d5_safety.py": "a888d8f600f7700240f9e422b276cd5178b177d57e5c2c45dcb7f27b1ead6cc6",
+    "scripts/validate_d5_results.py": "360b8f0684e41495cf5adf5ae352897ff63189506e53363b8b17d531e4b1e648",
+    "scripts/aggregate_d5_results.py": "ede7de26bd2d60c07536d7fcc7b9832117967148b37e25f56f71c82ae339dd79",
+    "scripts/create_d5_lock.py": "ed742ed77f2a9f8ad1c04fc5ac542d6538620a35e20110170c45e1ac616a86eb",
+    "config/d5_jobs.json": "2c5784cb53cde067e294994965ca9dedb3171151b6023fd76e8640bcf701a293"
+  },
+  "test_source_sha256": {
+    "tests/test_d1_smoke.py": "7268e6c1936e44403b83e9e7677264ec0e764d9e34a61eec867cc8704cefc5d6",
+    "tests/test_d2_tool_layer.py": "4ac71a592140ad4c855300faa9605b96ab140c98e4ca791debea225fbbf729e2",
+    "tests/test_d3_guardrails.py": "4fc1e444513c3a0a93461174b79a7dc9d09bb4fb18bd69461e8b540b9c34bcf4",
+    "tests/test_d4_evaluation.py": "fedd1ccc0ead786bd5d9ebab151c2892ff9eb51c42812c3af060838833e58e34",
+    "tests/test_d4_extra_cases.py": "f5d9b87d374bf793bb950b55ab4428b8b53f67afe7c1585d55aee556e31e4b19",
+    "tests/test_d5_audit_regressions.py": "d712405a652fdda58e74794a5aac8a507d01d02c1260c4c5b8b0ea87fd76895f",
+    "tests/test_d5_decision_contract.py": "522ee5f01f89eca9ada87394f5a4630536e8072ccb638ff9829d28b4b5c5b64b",
+    "tests/test_d5_documented_stops.py": "e0c791e14b23a86c35f029ae5bb09d726fa8c914f273be27265bd52ac45e5877",
+    "tests/test_d5_final_risks.py": "2c98afd8701d00230fee1ef7543ce9ad64deefa4b6a6e03f8b32b93e89563049",
+    "tests/test_d5_preparation.py": "41d1d105870e2b6dfb3741baad976f839d0dc03f7fd1fb39170ee2bf9d34fc87",
+    "tests/test_d5_provider_contracts.py": "5b44a151fb6c8900c37a0ab12c32dc5b4e7e2996c0cb3a87f6312e88f849202a",
+    "tests/test_d5_runner_contracts.py": "416d84daefaa1284c4e3fd591eeb27593a5de7aefe8c372d4f3cf7603208d479",
+    "tests/test_d5_team_safety.py": "110d2f20d170a6dc661ff77fe9975c3113498d30234588c352798210849cc5f5",
+    "tests/test_live_conversation.py": "0e07212ae17b19703f9e2c298ef3368d7a4a29ecb04d44174d48545face651f1"
+  },
+  "full_battery_jobs": [
+    {
+      "job": 1,
+      "model": "openai/gpt-5-mini",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 2,
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 3,
+      "model": "anthropic/claude-haiku-4.5",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 4,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 5,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v1",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    }
+  ],
+  "new_late_fault_matrix": {
+    "scenarios": 30,
+    "jobs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "positions": [
+      6,
+      35,
+      70
+    ],
+    "faults": [
+      "wrong_returned_model",
+      "fractional_token_usage"
+    ],
+    "invalid_usage_resume_new_calls": 0
+  },
+  "per_trial_boundary_checks": {
+    "jobs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "exact_charge_parts_usd": [
+      0.016605,
+      0.063395
+    ],
+    "exact_total_usd": "0.080000",
+    "at_cap_final_processed": true,
+    "at_cap_next_call_blocked": true,
+    "below_and_above_also_checked": true
+  },
+  "long_dialogue_checks": {
+    "jobs": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "completed_action_observation_pairs": 7,
+    "wire_messages": 16,
+    "unicode_and_untrusted_notes": true,
+    "provider_tokenizer_or_cost_prediction": false
+  },
+  "compilation_passed": true,
+  "git_diff_check_passed": true,
+  "remaining_live_checks": [
+    "Each member pinned checkout and unused assigned r7 directory",
+    "Own key, actual credit, previous D5 and other coursework charges",
+    "Actual gateway access, returned model ID, response envelope, usage and billing",
+    "All-five first-1 then first-5 checkpoints; no guarantee for later provider behavior or completion within budget"
+  ],
+  "new_collection_directories": [
+    {
+      "path": "results/d5/job1-tu-weikang-r7",
+      "exists": false
+    },
+    {
+      "path": "results/d5/job2-chen-ke-r7",
+      "exists": false
+    },
+    {
+      "path": "results/d5/job3-kang-xingyao-r7",
+      "exists": false
+    },
+    {
+      "path": "results/d5/job4-yao-fangxuan-r7",
+      "exists": false
+    },
+    {
+      "path": "results/d5/job5-huang-yihan-r7",
+      "exists": false
+    }
+  ]
+}

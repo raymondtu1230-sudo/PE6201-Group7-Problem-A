@@ -41,7 +41,7 @@ class PaidMalformedResponse(RuntimeError):
 
 
 class PaidProviderError(PaidMalformedResponse):
-    """The provider reported a generation error, possibly with partial output."""
+    """A provider error or a response belonging to a different requested model."""
 
 
 class PaidModelOutputFailure(PaidMalformedResponse):
@@ -195,6 +195,12 @@ def validate_live_settings(model: str, settings: dict[str, Any] | None) -> None:
             raise ValueError("Haiku 4.5 temperature must be between 0 and 1")
 
 
+def valid_token_count(value: Any) -> bool:
+    """Token counts are nonnegative integers, including JSON numbers like 12.0."""
+    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and math.isfinite(value) and value >= 0 and value == int(value))
+
+
 def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = BASE_URL,
                     settings: dict[str, Any] | None = None,
                     transport: Callable[..., Any] = urllib.request.urlopen) -> LiveResponse:
@@ -223,10 +229,10 @@ def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = 
     message = first.get("message")
     text = message.get("content") if isinstance(message, dict) else None
     refusal = message.get("refusal") if isinstance(message, dict) else None
-    required_usage = ("prompt_tokens", "completion_tokens", "cost")
-    usage_complete = isinstance(usage, dict) and all(
-        isinstance(usage.get(key), (int, float)) and not isinstance(usage.get(key), bool) and
-        math.isfinite(usage[key]) and usage[key] >= 0 for key in required_usage)
+    usage_complete = (isinstance(usage, dict)
+        and all(valid_token_count(usage.get(key)) for key in ("prompt_tokens", "completion_tokens"))
+        and isinstance(usage.get("cost"), (int, float)) and not isinstance(usage["cost"], bool)
+        and math.isfinite(usage["cost"]) and usage["cost"] >= 0)
     details = dict(usage=dict(usage) if isinstance(usage, dict) else {},
                    model=payload_object.get("model"), response_id=payload_object.get("id"),
                    latency_seconds=latency, text=text if isinstance(text, str) else None,
@@ -236,6 +242,16 @@ def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = 
                    refusal=refusal if isinstance(refusal, str) else None)
     if details["error"] is not None or details["finish_reason"] == "error":
         raise PaidProviderError("provider reported a generation error", **details)
+    if (not isinstance(details["model"], str) or not details["model"].strip()
+            or not isinstance(details["response_id"], str) or not details["response_id"].strip()
+            or not isinstance(message, dict) or message.get("role") != "assistant"):
+        raise PaidMalformedResponse("HTTP-success response had invalid model/id/message identity", **details)
+    if details["model"] != model:
+        # Keep the actual returned identity and charge. Do not silently assign an
+        # unexpected model, snapshot or alias to the requested experiment row.
+        details["error"] = {"kind": "model_identity_mismatch", "requested_model": model,
+                            "returned_model": details["model"]}
+        raise PaidProviderError("returned model does not match the requested model", **details)
     # OpenRouter permits null content for a filtered or exhausted completion.
     # Classify only an explicit model-output stop with a valid message envelope
     # and complete billing; unknown blanks and broken protocol still stop a job.

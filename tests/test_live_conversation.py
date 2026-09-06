@@ -13,11 +13,11 @@ from scripts import run_d5_live as runner
 
 
 class _HTTPResponse:
-    def __init__(self, text, response_id="mock-response"):
+    def __init__(self, text, response_id="mock-response", model="mock/model"):
         self.payload = json.dumps({
             "id": response_id,
-            "model": "mock/model",
-            "choices": [{"message": {"content": text}}],
+            "model": model,
+            "choices": [{"message": {"role": "assistant", "content": text}}],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1, "cost": 0.0},
         }).encode()
 
@@ -231,7 +231,7 @@ class LiveConversationTests(unittest.TestCase):
                     execution_mode="parallel",
                 )
                 text = planner.call_model(state)
-            return _HTTPResponse(text, f"five-case-{len(requests)}")
+            return _HTTPResponse(text, f"five-case-{len(requests)}", model=body["model"])
 
         def live_caller(**kwargs):
             return call_live_model(**kwargs, transport=transport)

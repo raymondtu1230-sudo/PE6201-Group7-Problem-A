@@ -1,8 +1,9 @@
 # Provider compatibility repair and release conditions
 
-**Current operating reference:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
-records the later all-five-job interface audit. PR #32 published the release lock.
-All five new collections will use one exact frozen checkout and that lock; old r6
+**Current operating reference:** [D5_FINAL_RISK_CHECK.md](D5_FINAL_RISK_CHECK.md)
+records the latest full regression and additional faults. Its runtime repairs
+require a new lock-only release after PR #32. All five new collections will use
+one exact frozen checkout and its verified lock; old r6
 remains historical evidence. Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for
 current execution order. The repair and tests below describe historical PR #29.
 
@@ -105,8 +106,10 @@ merged the later interface audit and explicit empty-stop handling; PR #32
 published `D5_LOCK.json` from that clean merged runtime. Its baseline is
 `1dc27cfbe257901c8e38243acb420f154a1d5664`.
 
-The formal battery now plans five new collections on one exact checkout commit
-and the published lock, including GPT. Historical r6 remains complete at 33/70,
+That PR #32 lock is historical after the final risk repair; use the latest
+lock-only release described in the current runbook. The formal battery plans
+five new collections on one exact checkout commit and its lock, including GPT.
+Historical r6 remains complete at 33/70,
 USD 0.73754105, with original manifests and reviews; it is outside the new formal
 comparison. Members use the designated fresh `r7` paths and their own keys.
 See the current runbook for the cohort's first-1, first-5 and remaining-65 gates.
