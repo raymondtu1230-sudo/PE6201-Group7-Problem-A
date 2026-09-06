@@ -1,0 +1,17 @@
+{
+  "baseline_commit": "77940bd3e99f1c0adcab5b43596446c71ce06c57",
+  "family": "OpenAI GPT",
+  "generation_settings": {
+    "max_tokens": 4096,
+    "temperature": 0,
+    "top_p": 1
+  },
+  "lock_hash": "576050f23376a5ee045fc597493932282814e7724c39fe37ed1f6249807ce82e",
+  "member": "TU WEIKANG",
+  "model": "openai/gpt-5-mini",
+  "planned_case_count": 50,
+  "planned_trial_count": 70,
+  "price_tier": "tier_2",
+  "prompt_version": "v2",
+  "started_at": "2026-09-05T12:49:41.799031+00:00"
+}
