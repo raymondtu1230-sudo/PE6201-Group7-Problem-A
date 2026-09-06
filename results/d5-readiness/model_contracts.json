@@ -1,0 +1,11 @@
+{
+  "checked_date": "2026-09-06",
+  "source": "https://openrouter.ai/api/v1/models",
+  "scope": "Selected public catalog facts, not authenticated generation tests or a guarantee for every route",
+  "models": [
+    {"id": "openai/gpt-5-mini", "temperature_listed": false, "top_p_listed": false, "max_tokens_listed": true, "top_provider_context_length": 400000, "top_provider_max_completion_tokens": 128000, "reasoning_mandatory": true},
+    {"id": "qwen/qwen3-30b-a3b-instruct-2507", "temperature_listed": true, "top_p_listed": true, "max_tokens_listed": true, "top_provider_context_length": 128000, "top_provider_max_completion_tokens": 32000, "reasoning_mandatory": null},
+    {"id": "anthropic/claude-haiku-4.5", "temperature_listed": true, "top_p_listed": true, "max_tokens_listed": true, "top_provider_context_length": 200000, "top_provider_max_completion_tokens": 64000, "reasoning_mandatory": false},
+    {"id": "google/gemini-2.5-flash-lite", "temperature_listed": true, "top_p_listed": true, "max_tokens_listed": true, "top_provider_context_length": 1048576, "top_provider_max_completion_tokens": 65535, "reasoning_mandatory": false}
+  ]
+}

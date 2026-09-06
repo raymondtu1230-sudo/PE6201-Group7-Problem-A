@@ -1,5 +1,11 @@
 # Teacher-source and D5 readiness check — 6 September 2026
 
+**Superseding operational decision:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
+retains GPT r6 with explicit disclosure and records the all-five-job audit. It does
+not override the teacher's same-commit requirement or claim instructor approval.
+Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for current execution order. The
+parameter blocker and release hold below describe the earlier audited revision.
+
 **Historical source audit at `3ac1fad`.** The subsequent parameter repair and
 its validation are recorded in [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md).
 The source conclusions below remain the audit of that earlier main, not a claim

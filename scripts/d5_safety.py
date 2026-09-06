@@ -10,7 +10,7 @@ from pathlib import Path
 import stat
 import tempfile
 
-from src.live_backend import PaidMalformedResponse
+from src.live_backend import PaidMalformedResponse, PaidModelOutputFailure
 
 ACTIVE = "active_trial.json"
 FILES = ("job_manifest.json", "trials.jsonl", "judgement_queue.json",
@@ -121,10 +121,13 @@ class TrialJournal:
             try:
                 response = caller(**kwargs)
             except PaidMalformedResponse as exc:
-                entry.update(status="provider_failure", text=exc.text, usage=exc.usage,
+                entry.update(status="model_output_failure" if isinstance(exc, PaidModelOutputFailure) else "provider_failure",
+                             text=exc.text, usage=exc.usage,
                              model=exc.model, response_id=exc.response_id,
                              finish_reason=exc.finish_reason,
                              native_finish_reason=exc.native_finish_reason, error=exc.error)
+                if exc.refusal is not None:
+                    entry["refusal"] = exc.refusal
                 self.data["phase"] = "response_received"
                 self._update_cost()
                 self.save()

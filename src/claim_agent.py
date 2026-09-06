@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from src.live_backend import BACKEND, BASE_URL, MODEL, LiveResponse, PaidMalformedResponse, PaidProviderError, call_live_model
+from src.live_backend import BACKEND, BASE_URL, MODEL, LiveResponse, PaidMalformedResponse, PaidProviderError, PaidModelOutputFailure, call_live_model
 
 # Vendor-neutral configuration is defined in live_backend; scripted remains default.
 INPUT_TOKEN_PRICE_PER_MILLION = 0.0
@@ -931,13 +931,20 @@ class ClaimAgent:
                                                  "native_finish_reason": exc.native_finish_reason,
                                                  "error": exc.error})
                 state.latency_seconds += exc.latency_seconds
+                if exc.refusal is not None:
+                    state.provider_responses[-1]["refusal"] = exc.refusal
                 cost = exc.usage.get("cost")
                 if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0:
                     state.estimated_cost += cost
                 state.halt_reason = "provider_error" if isinstance(exc, PaidProviderError) else "paid_malformed_response"
+                if isinstance(exc, PaidModelOutputFailure):
+                    state.halt_reason = ("budget_cap" if state.estimated_cost >= self.budget_usd
+                                         else "model_output_failure")
                 state.trace.append({"ModelError": state.halt_reason})
                 if exc.text is not None:
                     state.trace.append({"ModelResponse": exc.text})
+                if exc.refusal is not None:
+                    state.trace.append({"ModelRefusal": exc.refusal})
                 break
             except Exception as exc:
                 authentication = (getattr(exc, "code", None) in (401, 403) or
