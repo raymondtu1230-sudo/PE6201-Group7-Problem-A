@@ -32,11 +32,17 @@ be equally effective across providers; see the audit's interface limitations.
 ## Release and local state
 
 PR #32 published the first replacement lock. The subsequent final risk check
-changes four protected runtime files, so that lock must reject those changes.
-Merge the tested repair first, generate a replacement from that clean merged
-commit, and publish it in an independent **lock-only PR** before paid execution.
-The committed `D5_LOCK.json` is the source for the runtime baseline and lock hash;
-the release handoff identifies its lock-only PR and exact full merge SHA.
+changed four protected runtime files, and that old lock correctly rejected them.
+PR #34 merged the tested repair. PR #35 published the replacement generated from
+that clean merged commit, in an independent **lock-only PR**.
+
+- Common experimental checkout: `4c79c92fd0e68d802e1c6390afa2427202d2aa21` (PR #35 merge).
+- Runtime baseline: `c5584af8adaf11805e0ce7824789b711129bd371` (PR #34 merge).
+- Lock hash: `d5a261db915fa38c1844dc61c5d619e7fa542121bb97812a26bf315617a08b7e`.
+
+The committed `D5_LOCK.json` at that checkout is the source for the baseline and
+hash. Later documentation-only changes do not move the common experimental
+checkout or require members to recollect results.
 
 The lock covers all critical code, configuration, data, prompts and the schedule.
 Members verify the released lock; they do not generate one or copy an older hash.
