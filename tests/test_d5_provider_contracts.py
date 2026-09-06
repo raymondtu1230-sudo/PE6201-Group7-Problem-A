@@ -119,7 +119,7 @@ class ProviderContracts(unittest.TestCase):
                 self.call += 1
                 payload = json.loads(super().transport(request, timeout).read())
                 if self.trial == self.position:
-                    payload['usage']['cost'] = 0.04
+                    payload['usage']['cost'] = 0.09
                 return Response(payload)
         for job in range(1, 6):
             for position in (6, 35, 70):
@@ -134,9 +134,44 @@ class ProviderContracts(unittest.TestCase):
                     self.assertEqual(code, 4)
                     self.assertEqual((len(rows), wire.trial, wire.call), (position, position, 1))
                     self.assertEqual(rows[-1]['halt_reason'], 'budget_cap')
-                    self.assertAlmostEqual(rows[-1]['cost_usd'], 0.04)
+                    self.assertAlmostEqual(rows[-1]['cost_usd'], 0.09)
                     self.assertTrue(rows[-1]['billing_complete'])
                     self.assertEqual(json.loads((output / 'summary.json').read_text())['status'], 'run_budget_cap')
+
+    def test_cost_above_old_trial_cap_can_continue_within_new_cap(self):
+        cases = {row['case_id'] for row in runner.planned_runs()}
+        for job in range(1, 6):
+            with self.subTest(job=job):
+                output = self.root / f'below-new-cap-{job}'
+                wire = WireReplay(fail_cases=cases, cost=0.04)
+                for count in (1, 4):
+                    self.assertEqual(runner.run_live_job(job_number=job, output=output,
+                        lock_path=self.lock, max_new_runs=count, agent_factory=wire.factory), 0)
+                rows = [json.loads(s) for s in (output / 'trials.jsonl').read_text().splitlines()]
+                self.assertEqual(len(rows), 5)
+                self.assertTrue(all(row['halt_reason'] == 'final' for row in rows))
+                self.assertTrue(all(row['automatic_pass'] is False for row in rows))
+                self.assertAlmostEqual(sum(row['cost_usd'] for row in rows), 0.20)
+
+    def test_exact_job_budget_allows_last_reserved_trial_then_stops(self):
+        cases = {row['case_id'] for row in runner.planned_runs()}
+        for job in range(1, 6):
+            with self.subTest(job=job):
+                output = self.root / f'exact-budget-{job}'
+                wire = WireReplay(fail_cases=cases, cost=0.08)
+                for count in (1, 4, 65):
+                    code = runner.run_live_job(job_number=job, output=output,
+                        lock_path=self.lock, max_new_runs=count, agent_factory=wire.factory)
+                    if code: break
+                rows = [json.loads(s) for s in (output / 'trials.jsonl').read_text().splitlines()]
+                self.assertEqual(code, 4)
+                self.assertEqual((len(rows), len(wire.requests)), (35, 35))
+                self.assertAlmostEqual(sum(row['cost_usd'] for row in rows), 2.80)
+                self.assertEqual(json.loads((output / 'summary.json').read_text())['status'], 'job_budget_cap')
+                before = len(wire.requests)
+                self.assertEqual(runner.run_live_job(job_number=job, output=output,
+                    lock_path=self.lock, max_new_runs=1, agent_factory=wire.factory), 4)
+                self.assertEqual(len(wire.requests), before)
 
 
 if __name__ == '__main__':

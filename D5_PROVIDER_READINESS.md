@@ -1,5 +1,11 @@
 # Provider compatibility repair and release conditions
 
+**Historical parameter-repair record (PR #29).** The subsequent agreed budget
+policy is in [D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md). That change replaces the
+US$0.035/US$2.50 limits discussed below with US$0.08/US$2.80 and updates the
+late-spike simulation to US$0.09. The 145-test evidence below describes PR #29;
+the later budget verification is recorded separately. The common-release hold remains.
+
 ## Current decision
 
 This repair starts from merged main `97a85516c95deb16678aeb0d138e39523f7ec1db`

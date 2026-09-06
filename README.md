@@ -9,6 +9,8 @@ See [the repair verification and release conditions](D5_PROVIDER_READINESS.md)
 and [the teacher-source check](D5_REQUIREMENTS_CHECK.md) before any live commands.
 The recorded GPT battery remains unchanged; changed-version results cannot be
 silently pooled with it.
+The agreed [D5 budget plan](D5_BUDGET_PLAN.md) keeps the original model assignments,
+sets common US$0.08/US$2.80 stopping thresholds and reserves credit for other work.
 
 This repository currently implements **D1, D2, D3, and the deterministic D4 evaluation harness**:
 an offline, single-agent ReAct foundation for a health-insurance claim first

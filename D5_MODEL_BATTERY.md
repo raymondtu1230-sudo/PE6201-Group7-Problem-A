@@ -11,7 +11,9 @@ provider boundary now reject the known incompatible combination. This changes
 the frozen configuration: the retained D5 lock intentionally still identifies
 the old release and must refuse this changed runtime. No replacement release or
 paid rerun is authorized by this repair. See [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md)
-for validation and the unresolved comparison/budget conditions. Live command
+for parameter validation and [D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md) for the agreed
+spending policy. The common-version comparison and replacement lock are still
+unresolved. Live command
 examples below are historical reference, not instructions to start a pending job.
 
 ## Two-stage baseline lock
@@ -180,10 +182,13 @@ python3 scripts/aggregate_d5_results.py --lock D5_LOCK.json results/d5/job1-tu-w
 
 The shared `max_tokens=4096` ceiling is identical across models. It is above the
 largest observed scripted response estimate (1,504 tokens) with more than 2.7× headroom while still
-bounding spend. The per-run ceiling is US$0.035 and the cumulative job ceiling is
-US$2.50: 70 runs at the per-run ceiling cannot be started past the job cap, which stays
-below the teacher's US$3 member limit. These are safety ceilings, not invented provider
-price or cost estimates; provider-measured usage and cost remain mandatory.
+bounding spend. The shared per-trial stop threshold is US$0.08 and the cumulative
+job threshold is US$2.80. Before starting a trial, the runner requires room for
+the whole US$0.08 reservation. These limits do not promise 70 completed trials or
+a provider-enforced final bill: an in-flight request may cross a threshold.
+Spending is measured from provider evidence, and cumulative totals across old
+directories and other assignments must also be considered. See
+[D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md); these are stop thresholds, not spending targets.
 
 ## Team safety audit and recovery
 

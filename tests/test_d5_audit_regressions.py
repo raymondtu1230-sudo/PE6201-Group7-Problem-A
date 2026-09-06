@@ -128,7 +128,7 @@ class AuditRegressions(unittest.TestCase):
 
     def test_budget_cap_stops_batch_after_retaining_failed_trial(self):
         self.assertEqual(self.run_batch(WireReplay(), 1), 0)
-        wire = WireReplay(cost=0.04)
+        wire = WireReplay(cost=0.09)
         self.assertNotEqual(self.run_batch(wire, 4), 0)
         self.assertEqual(len(wire.requests), 1)
         rows = (self.root / 'out/trials.jsonl').read_text().splitlines()

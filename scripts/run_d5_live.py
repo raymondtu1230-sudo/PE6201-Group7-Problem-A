@@ -3,6 +3,7 @@
 from __future__ import annotations
 import argparse,json,math,os,sys,tempfile,time
 from datetime import datetime,timezone
+from decimal import Decimal
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
@@ -198,8 +199,11 @@ def _run_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int,
     for item in schedule:
         if retry_run_id is None and item["run_id"] in attempted_ids: continue
         if count>=max_new_runs: break
-        spent=sum(x["cost_usd"] for x in rows if isinstance(x.get("cost_usd"),(int,float)))
-        if spent + config["run_budget_usd"] > config["job_budget_usd"]:
+        # Compare decimal money at the boundary: 34 * $0.08 + $0.08 is $2.80,
+        # not a floating-point amount just above the configured job budget.
+        spent=sum((Decimal(str(x["cost_usd"])) for x in rows
+                   if isinstance(x.get("cost_usd"),(int,float))),Decimal("0"))
+        if spent + Decimal(str(config["run_budget_usd"])) > Decimal(str(config["job_budget_usd"])):
             rebuild_reviews(output,rows,labelmap); write_summary(output,rows,labelmap,"job_budget_cap"); return 4
         attempt=1+max((x.get("attempt",1) for x in rows if x.get("run_id")==item["run_id"]),default=0)
         journal=TrialJournal(output,{**item,**job,"attempt":attempt,

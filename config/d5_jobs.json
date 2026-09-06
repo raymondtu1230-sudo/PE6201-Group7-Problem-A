@@ -1,7 +1,7 @@
 {
   "generation_settings": {"temperature": 0, "max_tokens": 4096},
-  "job_budget_usd": 2.50,
-  "run_budget_usd": 0.035,
+  "job_budget_usd": 2.80,
+  "run_budget_usd": 0.08,
   "pricing": {"source": null, "effective_date": null, "models": {}},
   "jobs": [
     {"member": "TU WEIKANG", "model": "openai/gpt-5-mini", "prompt_version": "v2", "family": "OpenAI GPT", "price_tier": "tier_2"},
