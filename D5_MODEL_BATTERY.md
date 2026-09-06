@@ -5,11 +5,14 @@ Job 1 has 70 retained trials and six human-confirmed judgements; final success i
 33/70 and recorded cost is USD 0.73754105. Its canonical path is
 `results/d5/job1-tu-weikang-r6`. Earlier r3/r5 paths are audit-only pilots.
 
-**Hold new paid jobs.** The current request supplies both `temperature` and
-`top_p`, which conflicts with the documented Haiku 4.5 contract. The current
-preflight misses this constraint. See [D5_REQUIREMENTS_CHECK.md](D5_REQUIREMENTS_CHECK.md)
-for the offline reproduction, evidence and conditions for resuming. Live command
-examples below are historical reference, not authorization to start a pending job.
+**Hold new paid jobs.** The repaired common request uses `temperature=0` and
+`max_tokens=4096`, omitting `top_p` for every model. Preflight and the direct
+provider boundary now reject the known incompatible combination. This changes
+the frozen configuration: the retained D5 lock intentionally still identifies
+the old release and must refuse this changed runtime. No replacement release or
+paid rerun is authorized by this repair. See [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md)
+for validation and the unresolved comparison/budget conditions. Live command
+examples below are historical reference, not instructions to start a pending job.
 
 ## Two-stage baseline lock
 

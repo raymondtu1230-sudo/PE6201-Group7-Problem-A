@@ -158,10 +158,43 @@ def assert_live_message_contract() -> None:
         raise ValueError("live message contract mixed history into initial task")
 
 
+def validate_live_settings(model: str, settings: dict[str, Any] | None) -> None:
+    """Reject known invalid requests locally; never silently drop requested settings.
+
+    Haiku 4.5's documented Messages API contract permits temperature OR top_p,
+    with temperature in [0, 1]. A model listing supporting both fields separately
+    does not establish that their combination is accepted.
+    """
+    if settings is None:
+        return
+    if not isinstance(settings, dict) or set(settings) - {"temperature", "top_p", "max_tokens"}:
+        raise ValueError("generation settings must not override model, messages or routing")
+    for name in ("temperature", "top_p"):
+        if name in settings:
+            value = settings[name]
+            if (not isinstance(value, (int, float)) or isinstance(value, bool) or
+                    not math.isfinite(value)):
+                raise ValueError(f"invalid {name}")
+    if "temperature" in settings and not 0 <= settings["temperature"] <= 2:
+        raise ValueError("temperature must be between 0 and 2")
+    if "top_p" in settings and not 0 < settings["top_p"] <= 1:
+        raise ValueError("top_p must be greater than 0 and at most 1")
+    if "max_tokens" in settings:
+        value = settings["max_tokens"]
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise ValueError("max_tokens must be a positive integer")
+    if model == "anthropic/claude-haiku-4.5":
+        if "temperature" in settings and "top_p" in settings:
+            raise ValueError("Haiku 4.5 requires temperature OR top_p, not both")
+        if settings.get("temperature", 0) > 1:
+            raise ValueError("Haiku 4.5 temperature must be between 0 and 1")
+
+
 def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = BASE_URL,
                     settings: dict[str, Any] | None = None,
                     transport: Callable[..., Any] = urllib.request.urlopen) -> LiveResponse:
     """Call the OpenRouter-compatible chat-completions endpoint; tests inject transport."""
+    validate_live_settings(model, settings)
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY is required for live execution")

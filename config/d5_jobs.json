@@ -1,5 +1,5 @@
 {
-  "generation_settings": {"temperature": 0, "top_p": 1, "max_tokens": 4096},
+  "generation_settings": {"temperature": 0, "max_tokens": 4096},
   "job_budget_usd": 2.50,
   "run_budget_usd": 0.035,
   "pricing": {"source": null, "effective_date": null, "models": {}},
