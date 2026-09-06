@@ -1,5 +1,10 @@
 # D5 team safety acceptance — 6 September 2026 (SGT)
 
+**Historical repair audit.** For the later check of merged main, teacher-source
+precedence, completed job 1 and the newly identified provider-parameter blocker,
+read [D5_REQUIREMENTS_CHECK.md](D5_REQUIREMENTS_CHECK.md). Passing the synthetic
+tests below does not certify every provider's generation-parameter contract.
+
 This audit started from `main` commit `896f2ac4453f87719f7b5672c0a54e28603f0545`.
 It used synthetic provider responses and removed real API keys. No live generation
 or additional paid trial was performed. Temporary simulated scores and annotations

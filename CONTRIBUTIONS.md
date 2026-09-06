@@ -6,7 +6,7 @@ with commit or review references.
 
 | Member | Declared/planned D5 ownership | Completed, verifiable work | Reviewing/supporting work |
 |---|---|---|---|
-| TU WEIKANG | `openai/gpt-5-mini`, v2 | Pending — add commit/result reference | Pending — add truthful reference |
+| TU WEIKANG | `openai/gpt-5-mini`, v2 | 70 r6 trials archived in [PR #26](https://github.com/raymondtu1230-sudo/PE6201-Group7-Problem-A/pull/26); earlier pilots retained separately | Confirmed six assistant-prepared judgements in [PR #27](https://github.com/raymondtu1230-sudo/PE6201-Group7-Problem-A/pull/27); method and evidence in [the review record](results/d5/job1-tu-weikang-r6/REVIEW_RECORD.md) |
 | CHEN KE | `qwen/qwen3-30b-a3b-instruct-2507`, v2 | Pending — add commit/result reference | Pending — add truthful reference |
 | KANG XINGYAO | `anthropic/claude-haiku-4.5`, v2 | Pending — add commit/result reference | Pending — add truthful reference |
 | YAO FANGXUAN | `google/gemini-2.5-flash-lite`, v2 | Pending — add commit/result reference | Pending — add truthful reference |
