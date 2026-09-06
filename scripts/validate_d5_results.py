@@ -9,7 +9,7 @@ from scripts.create_d5_lock import canonical,verify_lock
 from scripts.run_d5_live import load_labels,planned_runs
 from src.d4_evaluation import score_trial,validate_annotations
 from src.claim_agent import DECISION_RECORD_SCHEMA
-from scripts.run_d5_live import tool_order
+from scripts.run_d5_live import tool_order,complete_provider_usage
 from scripts.d5_safety import known_cost
 SECRET=re.compile(r"(?i)(authorization\s*:|bearer\s+[A-Za-z0-9_-]{12,}|sk-[A-Za-z0-9_-]{12,})")
 def nonnegative_number(x:object)->bool: return isinstance(x,(int,float)) and not isinstance(x,bool) and math.isfinite(x) and x>=0
@@ -57,7 +57,9 @@ def validate(directory:Path,lock_path:Path,allow_incomplete:bool=False)->dict:
         scored=score_trial(labelmap[row["case_id"]],row["decision_record"],claims[row["case_id"]],facts,autonomy="confirm",confirmed=True,write_count=row.get("write_count"),halt_reason=row.get("halt_reason"))
         if row.get("automatic_pass") is not scored["passed"] or row.get("failed_checks")!=scored["failed_checks"] or row.get("checks")!=scored["checks"]: raise ValueError("stored score/checks do not match recomputation")
         if not nonnegative_number(row.get("latency_seconds")): raise ValueError("invalid latency value")
-        if allow_incomplete and row.get("halt_reason")=="paid_malformed_response" and row.get("cost_usd") is None:
+        if (allow_incomplete and row.get("halt_reason")=="paid_malformed_response"
+                and (not row.get("provider_usage") or
+                     any(not complete_provider_usage(item) for item in row["provider_usage"]))):
             # Audit evidence is valid even with unknown billing. inspect_live_job
             # separately blocks any further spending; final validation still fails.
             continue

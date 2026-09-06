@@ -4,8 +4,9 @@
 the published lock. Jobs 1–4 compare four families with v2; jobs 4–5 compare the
 fixed Gemini model with v2/v1. Historical GPT r6 is outside the new formal table.
 The parameter repair, budget repair, interface audit and separate lock have merged
-in PRs #29–#32. Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for execution and
-[D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md) for the later evidence.
+in PRs #29–#32. The [final risk check](D5_FINAL_RISK_CHECK.md) records subsequent
+runtime repairs, full regression evidence and the need for a new lock-only release.
+Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for current execution.
 
 **Historical source audit at `3ac1fad`.** The body below records the evidence and
 blockers at that earlier revision. Its 138-test result, old prices/caps and

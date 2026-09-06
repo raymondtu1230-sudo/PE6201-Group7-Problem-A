@@ -1,9 +1,10 @@
 # D5 team safety acceptance — 6 September 2026 (SGT)
 
-**Current operating reference:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
+**Current operating reference:** [D5_FINAL_RISK_CHECK.md](D5_FINAL_RISK_CHECK.md)
 and [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) supersede this historical run order
 with the five-job interface audit, five new collections on one frozen version,
-and cohort checkpoints. PR #32 has published the replacement lock.
+and cohort checkpoints. The final risk repair requires a new lock-only release
+after the historical PR #32 lock; follow the latest release handoff.
 
 **Historical repair audit.** For the later check of merged main, teacher-source
 precedence, completed job 1 and the newly identified provider-parameter blocker,

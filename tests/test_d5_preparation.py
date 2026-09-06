@@ -9,7 +9,7 @@ FIELDS={"signature","what","input","returns","fails_when","irreversible"}
 class FakeHTTP:
     def __enter__(self): return self
     def __exit__(self,*args): return False
-    def read(self): return json.dumps({"choices":[{"message":{"content":"Final: safe"}}],"usage":{"prompt_tokens":3,"completion_tokens":2,"cost":0.001}}).encode()
+    def read(self): return json.dumps({"id":"synthetic-preparation","model":"vendor/model","choices":[{"message":{"role":"assistant","content":"Final: safe"}}],"usage":{"prompt_tokens":3,"completion_tokens":2,"cost":0.001}}).encode()
 class D5PreparationTests(unittest.TestCase):
     def test_descriptor_contracts_complete_distinct_limited_and_smaller(self):
         for d in TOOL_DESCRIPTOR_SETS.values():

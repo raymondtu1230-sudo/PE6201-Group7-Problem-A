@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import json
 import copy
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -838,6 +840,14 @@ class ClaimAgent:
                     hospital_status={"hospital_id": hospital["hospital_id"], "panel": hospital["panel"]})
         return base
 
+    @staticmethod
+    def _live_cost(state: _State) -> Decimal:
+        """Compare recorded monetary values without incremental float rounding."""
+        return sum((Decimal(str(item["cost"])) for item in state.provider_usage
+                    if isinstance(item.get("cost"), (int, float))
+                    and not isinstance(item["cost"], bool)
+                    and math.isfinite(item["cost"]) and item["cost"] >= 0), Decimal("0"))
+
     def call_model(self, state: _State) -> str:
         """Return scripted Thought/Action or Final; no network or paid call occurs."""
         if self.backend == "live":
@@ -848,9 +858,7 @@ class ClaimAgent:
                                              "finish_reason": response.finish_reason,
                                              "native_finish_reason": response.native_finish_reason})
             state.latency_seconds += response.latency_seconds
-            cost = response.usage.get("cost")
-            if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0:
-                state.estimated_cost += cost
+            state.estimated_cost = float(self._live_cost(state))
             return response.text
         if self.backend != "scripted":
             raise RuntimeError("unsupported backend")
@@ -916,7 +924,7 @@ class ClaimAgent:
             # One step is one processed response; check before requesting it.
             if state.model_calls >= self.max_steps:
                 state.halt_reason = "step_cap"; break
-            if self.backend == "live" and state.estimated_cost >= self.budget_usd:
+            if self.backend == "live" and self._live_cost(state) >= Decimal(str(self.budget_usd)):
                 state.halt_reason = "budget_cap"
                 state.trace.append({"Guardrail": {"budget_usd": self.budget_usd,
                                                     "measured_cost": state.estimated_cost}})
@@ -933,12 +941,10 @@ class ClaimAgent:
                 state.latency_seconds += exc.latency_seconds
                 if exc.refusal is not None:
                     state.provider_responses[-1]["refusal"] = exc.refusal
-                cost = exc.usage.get("cost")
-                if isinstance(cost, (int, float)) and not isinstance(cost, bool) and cost >= 0:
-                    state.estimated_cost += cost
+                state.estimated_cost = float(self._live_cost(state))
                 state.halt_reason = "provider_error" if isinstance(exc, PaidProviderError) else "paid_malformed_response"
                 if isinstance(exc, PaidModelOutputFailure):
-                    state.halt_reason = ("budget_cap" if state.estimated_cost >= self.budget_usd
+                    state.halt_reason = ("budget_cap" if self._live_cost(state) >= Decimal(str(self.budget_usd))
                                          else "model_output_failure")
                 state.trace.append({"ModelError": state.halt_reason})
                 if exc.text is not None:
@@ -961,7 +967,9 @@ class ClaimAgent:
                 state.estimated_cost = (((state.input_tokens * INPUT_TOKEN_PRICE_PER_MILLION +
                                           state.output_tokens * OUTPUT_TOKEN_PRICE_PER_MILLION) / 1_000_000) +
                                         state.model_calls * self.model_call_cost_usd)
-            if state.estimated_cost > self.budget_usd:
+            above_budget = (self._live_cost(state) > Decimal(str(self.budget_usd))
+                            if self.backend == "live" else state.estimated_cost > self.budget_usd)
+            if above_budget:
                 state.halt_reason = "budget_cap"
                 state.trace.append({"ModelResponse": response})
                 state.trace.append({"Guardrail": {"budget_usd": self.budget_usd,

@@ -102,11 +102,20 @@ PR #32 subsequently published the replacement lock; see the current runbook.
 The later interface audit passed 31 selected tests, with its source hashes recorded
 in `results/d5-readiness/cross_model_audit.json`.
 
+The [final risk check](D5_FINAL_RISK_CHECK.md) additionally reproduced a different,
+within-trial rounding error: incremental USD 0.016605 + 0.063395 became
+0.08000000000000002 and incorrectly rejected an already-returned final answer.
+Live per-trial comparisons now also use decimal sums of the original charges.
+A final answer at exactly USD 0.08 can be processed; another paid request at that
+boundary cannot start. Above-cap responses still retain their charge and stop.
+The latest full-suite evidence is in `results/d5-readiness/final_risk_audit.json`.
+
 ## Release and execution order
 
 The budget repair was merged in PR #30, the cross-model audit in PR #31, and the
-independent lock in PR #32. The formal comparison now plans five new collections
-on one exact checkout commit and that lock, including GPT. Use
+initial replacement lock in PR #32. The final risk repair requires a further
+independent lock from its clean merged runtime. The formal comparison plans five
+new collections on the exact latest lock-release checkout, including GPT. Use
 [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for the designated `r7` directories.
 
 After keyless preflight and each member's private balance/key checks, inspect the
