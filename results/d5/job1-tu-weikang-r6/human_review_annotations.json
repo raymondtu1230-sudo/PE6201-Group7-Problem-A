@@ -1,44 +1,44 @@
 [
   {
     "case_id": "CLM-9029",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. No issued decision record or candidate reason; Final text was returned without calling issue_decision_letter. Cannot approve an absent review candidate.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9029-t1",
-    "status": "pending"
+    "status": "rejected"
   },
   {
     "case_id": "CLM-9030",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. The issued record retains non-panel H-330, covered 70553 and approved total 610. Its reason and authentic observations support coverage; the member's reimbursement wording did not cause an invented refusal.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9030-t1",
-    "status": "pending"
+    "status": "approved"
   },
   {
     "case_id": "CLM-9031",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. Despite the terse narrative, the record preserves both fixture lines (80053:95; 99213:185), covered dispositions and approved total 280. Its reason and evidence support the outcome.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9031-t1",
-    "status": "pending"
+    "status": "approved"
   },
   {
     "case_id": "CLM-9032",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. No issued decision record or candidate reason. Although Final text discusses the evidence, it cannot replace the missing gated output.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9032-t1",
-    "status": "pending"
+    "status": "rejected"
   },
   {
     "case_id": "CLM-9033",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. The reason is terse ('all lines resolved'), but the complete record and genuine coverage observation support covered 45378, itemised_bill present and approved total 1050. Shorthand did not override structured evidence.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9033-t1",
-    "status": "pending"
+    "status": "approved"
   },
   {
     "case_id": "CLM-9034",
-    "review_note": "",
-    "reviewer": "",
+    "review_note": "Human confirmation on 2026-09-06: TU WEIKANG accepted the assistant-prepared evidence summary and proposed judgement in the project conversation. The ordinary coverage question was not treated as hostile. The issued record identifies EX-14 for 15823, approved total 0 and refused total 650, matching the predefined whole-claim outcome convention.",
+    "reviewer": "TU WEIKANG",
     "run_id": "d4-clm-9034-t1",
-    "status": "pending"
+    "status": "approved"
   }
 ]

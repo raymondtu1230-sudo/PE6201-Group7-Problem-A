@@ -9,5 +9,10 @@ Earlier pilot trials must not be pooled into the r6 battery.
 
 The r6 automatic result is 33/70 overall and 5/30 on negative trials.
 Its total recorded API cost is USD 0.73754105.
-Six judgement reviews remain pending. Failure analysis is not yet complete.
-This archive preserves collected evidence and is not a final completion claim.
+On 2026-09-06, TU WEIKANG confirmed the six assistant-prepared judgement
+recommendations: 4 approved, 2 rejected, 0 pending. The final result remains
+33/70 overall (47.14%) and 5/30 on negative trials (16.67%).
+
+Job 1 r6 collection and judgement are complete. This does not claim completion
+of the other four D5 jobs or the whole assignment. The review method, evidence
+and failure breakdown are in [the r6 review record](job1-tu-weikang-r6/REVIEW_RECORD.md).
