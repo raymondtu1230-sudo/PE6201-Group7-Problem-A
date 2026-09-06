@@ -1,10 +1,23 @@
-# D5 live-model battery — preparation only
+# D5 live-model battery
 
-**Status: all live results are pending. No live model was called during this preparation.**
+**Status, 6 September 2026: job 1 r6 complete; jobs 2–5 pending.**
+Job 1 has 70 retained trials and six human-confirmed judgements; final success is
+33/70 and recorded cost is USD 0.73754105. Its canonical path is
+`results/d5/job1-tu-weikang-r6`. Earlier r3/r5 paths are audit-only pilots.
+
+**Hold new paid jobs.** The current request supplies both `temperature` and
+`top_p`, which conflicts with the documented Haiku 4.5 contract. The current
+preflight misses this constraint. See [D5_REQUIREMENTS_CHECK.md](D5_REQUIREMENTS_CHECK.md)
+for the offline reproduction, evidence and conditions for resuming. Live command
+examples below are historical reference, not authorization to start a pending job.
 
 ## Two-stage baseline lock
 
-After this preparation PR is merged, check out that exact clean merged baseline and run
+The existing released baseline is `7e1657220534de48d48fa1c639ee75903469204b`,
+with lock-only release `bad40060c0ba77b214de3317ca16e8b12a0700ec`. A new member
+verifies the existing lock; they do not regenerate it just to start their job.
+The following describes the release procedure only when a baseline actually changes.
+After a runtime preparation PR is merged, check out that exact clean merged baseline and run
 `PYTHONPATH=. python3 scripts/create_d5_lock.py --output D5_LOCK.json`. The generator
 refuses dirty evaluation-critical files. Commit only the generated lock in a later
 lock-only commit. `--verify D5_LOCK.json` accepts that descendant commit because it
@@ -207,7 +220,8 @@ metadata in each member's smoke trace. Do not alter one member's prompt, limits 
 settings after seeing their score. A public model listing or successful key-auth check
 does not guarantee generation access, available balance, output quality or uptime.
 
-This repair changes locked runtime files. Merge the repair, then generate the lock
-from clean merged main and merge that lock-only change before any new paid run.
+The historical safety repair changed locked runtime files and was released through
+PRs #24/#25. It is already merged; do not repeat that lock-generation procedure
+merely because the next member joins.
 Existing r3/r5 pilot files retain their original baseline and cost evidence; do not
 rewrite their hashes or silently mix them into results from the repaired baseline.
