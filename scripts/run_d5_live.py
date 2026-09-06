@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from src.claim_agent import ClaimAgent, assert_decision_contract, normalize_action
-from src.live_backend import assert_live_message_contract
+from src.live_backend import assert_live_message_contract,validate_live_settings
 from src.d4_evaluation import build_schedule,load_facts,score_trial,validate_annotations,validate_answer_key
 from scripts.create_d5_lock import canonical,verify_lock
 from scripts.d5_safety import ACTIVE,TrialJournal,check_output,durable_json,exclusive_output,known_cost,probe_writes
@@ -30,13 +30,15 @@ def validate_battery_config(config:dict)->None:
             config["job_budget_usd"] < config["run_budget_usd"]):
         raise ValueError("invalid D5 budget caps")
     settings=config["generation_settings"]
-    if set(settings)!={"temperature","top_p","max_tokens"}:
-        raise ValueError("generation settings must not override model, messages or routing")
+    if set(settings)!={"temperature","max_tokens"}:
+        raise ValueError("shared generation settings require temperature and max_tokens only; omit top_p for Haiku compatibility")
     if (not isinstance(settings["max_tokens"],int) or isinstance(settings["max_tokens"],bool) or settings["max_tokens"]<=0 or
-        not all(isinstance(settings[k],(int,float)) and not isinstance(settings[k],bool) and math.isfinite(settings[k]) for k in ("temperature","top_p")) or
-        not 0<=settings["temperature"]<=2 or not 0<settings["top_p"]<=1 or
+        not isinstance(settings["temperature"],(int,float)) or isinstance(settings["temperature"],bool) or not math.isfinite(settings["temperature"]) or
+        not 0<=settings["temperature"]<=2 or
         not all(math.isfinite(config[k]) and not isinstance(config[k],bool) for k in ("run_budget_usd","job_budget_usd"))):
         raise ValueError("invalid generation settings or budget caps")
+    for job in jobs:
+        validate_live_settings(job["model"],settings)
 
 def preflight_live_job(*,job_number:int,output:Path,lock_path:Path,max_new_runs:int)->tuple[dict,dict,dict,list[dict]]:
     """Perform every local compatibility check before an agent/provider exists."""

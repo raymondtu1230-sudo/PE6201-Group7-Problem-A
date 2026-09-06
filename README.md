@@ -3,10 +3,12 @@
 **Status checked 6 September 2026:** TU WEIKANG's D5 job 1 r6 is complete,
 including six human-confirmed judgements: 33/70 final passes, USD 0.73754105.
 Jobs 2–5 and the final D6/D7/submission deliverables remain unfinished.
-**Hold new paid jobs:** the source and provider audit identified a Haiku 4.5
-sampling-parameter compatibility gap that the current preflight does not detect.
-See [the requirements and readiness check](D5_REQUIREMENTS_CHECK.md) before using
-any live commands. The recorded GPT battery remains unchanged.
+**Hold new paid jobs:** the Haiku sampling-parameter repair is prepared, but it
+changes the shared frozen settings and has no replacement release lock yet.
+See [the repair verification and release conditions](D5_PROVIDER_READINESS.md)
+and [the teacher-source check](D5_REQUIREMENTS_CHECK.md) before any live commands.
+The recorded GPT battery remains unchanged; changed-version results cannot be
+silently pooled with it.
 
 This repository currently implements **D1, D2, D3, and the deterministic D4 evaluation harness**:
 an offline, single-agent ReAct foundation for a health-insurance claim first

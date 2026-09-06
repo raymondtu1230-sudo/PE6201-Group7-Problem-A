@@ -1,5 +1,11 @@
 # Teacher-source and D5 readiness check — 6 September 2026
 
+**Historical source audit at `3ac1fad`.** The subsequent parameter repair and
+its validation are recorded in [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md).
+The source conclusions below remain the audit of that earlier main, not a claim
+that the repaired runtime still sends both parameters. The paid-run hold remains
+until a common release/comparison decision and budget review are complete.
+
 ## Decision and audit scope
 
 **Do not start the next paid job yet.** Job 1 r6 is valid and complete, but the

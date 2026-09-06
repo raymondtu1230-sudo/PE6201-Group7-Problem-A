@@ -27,6 +27,13 @@ class WireReplay:
 
     def transport(self, request, timeout):
         body = json.loads(request.data)
+        # Independent provider-contract fixture. Do not call the implementation's
+        # validator here: a future serializer regression must fail this rehearsal.
+        if body['model'] == 'anthropic/claude-haiku-4.5':
+            if 'temperature' in body and 'top_p' in body:
+                raise AssertionError('Haiku contract forbids two sampling parameters')
+            if not 0 <= body.get('temperature', 1) <= 1:
+                raise AssertionError('Haiku temperature outside provider range')
         messages = body['messages']
         task = json.loads(messages[1]['content'].split('\n', 1)[1])
         case = task['request']['claim_id']
