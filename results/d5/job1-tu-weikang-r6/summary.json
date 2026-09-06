@@ -1,8 +1,8 @@
 {
   "completed_model_responses": 70,
   "cost_evidence_missing": false,
-  "final_pass_rate": null,
-  "judgements_pending": true,
-  "negative_pass_rate": null,
-  "status": "incomplete"
+  "final_pass_rate": 0.4714285714285714,
+  "judgements_pending": false,
+  "negative_pass_rate": 0.16666666666666666,
+  "status": "complete"
 }
