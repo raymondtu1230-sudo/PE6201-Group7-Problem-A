@@ -1,16 +1,18 @@
 # PE6201 Assignment 2 — Group 7, Problem A
 
-**Status checked 6 September 2026:** TU WEIKANG's D5 job 1 r6 is complete,
-including six human-confirmed judgements: 33/70 final passes, USD 0.73754105.
-Jobs 2–5 and the final D6/D7/submission deliverables remain unfinished.
+**Status checked 6 September 2026:** the formal D5 comparison will collect all
+five jobs on one frozen release, including a new GPT job 1. All five new `r7`
+collections are pending. TU WEIKANG's completed r6 remains historical evidence:
+33/70 final passes, USD 0.73754105, with six human-confirmed judgements. See the
+[result index](results/d5/README.md) for its role and the separate cost ledger.
 The [five-job interface audit and 70-trial offline rehearsals](D5_CROSS_MODEL_CHECK.md)
-include GPT, Qwen, Haiku and both Gemini prompt versions. The selected plan retains
-GPT r6 with explicit version/settings disclosure; no paid GPT rerun is authorized.
-This differs from the teacher's same-commit wording and is not instructor approval.
-Follow the [current operating sequence](D5_MODEL_BATTERY.md): verify the separately
-released lock and each member's environment, then complete the cohort's first 1 and
-next 4 trials before any remaining 65. A passing simulation is not live-provider
-validation. Do not mix different locks in the strict aggregator.
+include GPT, Qwen, Haiku and both Gemini prompt versions. The runtime audit and
+separate release lock are merged. Follow the [current operating sequence](D5_MODEL_BATTERY.md):
+pin one exact checkout commit for all five members, verify the published lock and
+each member's environment, then inspect all five first trials and all five
+five-trial batches before any remaining 65. GPT's remaining 65 run last.
+A passing simulation is not live-provider validation. Aggregate only the five
+complete new collections; D6, D7 and the final submission remain unfinished.
 The agreed [D5 budget plan](D5_BUDGET_PLAN.md) keeps the original model assignments,
 sets common US$0.08/US$2.80 stopping thresholds and reserves credit for other work.
 

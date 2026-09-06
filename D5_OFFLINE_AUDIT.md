@@ -1,5 +1,10 @@
 # D5 audit and zero-cost rehearsal — 5 September 2026
 
+**Historical audit:** the commits, test totals, locks and next steps below describe
+5 September. For the current published lock, all-five-job checks and designated
+new result directories, use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) and
+[D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md).
+
 Reviewed main: `6dfc2dc290f9b5b23b84da1d9da4afcba586429f`.
 Its lock verified with hash `87d0832519035858e6910f456895350428234f44fe6ae3bfb9dcee87b19f1309`.
 The previous 115 tests passed with socket connections blocked. That did not cover

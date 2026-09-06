@@ -2,7 +2,8 @@
 
 **Current operating reference:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
 and [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) supersede this historical run order
-with the five-job interface audit, r6 retention decision and cohort checkpoints.
+with the five-job interface audit, five new collections on one frozen version,
+and cohort checkpoints. PR #32 has published the replacement lock.
 
 **Historical repair audit.** For the later check of merged main, teacher-source
 precedence, completed job 1 and the newly identified provider-parameter blocker,
@@ -89,9 +90,9 @@ was fabricated. Compile and whitespace checks passed. D0–D4 artifacts were pre
 
 ## Release and honest limits
 
-The current tracked lock predates these runtime changes and must reject the new code.
-Merge the repair first, generate a lock from clean merged main, then merge the lock-only
-change. Never bypass this gate or rewrite the hashes on already-paid results. Preserve
+At this historical repair stage, the tracked lock predated the runtime changes and
+correctly rejected them. The later formal lock was independently published in PR #32.
+Never bypass verification or rewrite the hashes on already-paid results. Preserve
 the earlier five r5 trials with their original version and cost provenance; they are
 pilot evidence, not interchangeable with a newly locked formal battery.
 

@@ -1,22 +1,23 @@
 # Provider compatibility repair and release conditions
 
-**Superseding decision:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md) records
-the selected r6 retention/disclosure route, all-five-job rehearsals and the next
-release. Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for current execution order.
-The holds and unresolved decisions below describe the historical PR #29 state.
+**Current operating reference:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
+records the later all-five-job interface audit. PR #32 published the release lock.
+All five new collections will use one exact frozen checkout and that lock; old r6
+remains historical evidence. Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for
+current execution order. The repair and tests below describe historical PR #29.
 
 **Historical parameter-repair record (PR #29).** The subsequent agreed budget
 policy is in [D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md). That change replaces the
 US$0.035/US$2.50 limits discussed below with US$0.08/US$2.80 and updates the
 late-spike simulation to US$0.09. The 145-test evidence below describes PR #29;
-the later budget verification is recorded separately. The common-release hold remains.
+the later budget verification is recorded separately.
 
-## Current decision
+## Decision at the PR #29 repair stage
 
 This repair starts from merged main `97a85516c95deb16678aeb0d138e39523f7ec1db`
 (PR #28). It addresses the Haiku parameter conflict using **one common requested
 configuration for all five jobs**, not a special prompt or scoring adjustment.
-**New paid jobs remain on hold.** This is a tested code repair, not a completed
+At that stage new paid jobs remained on hold. This was a tested code repair, not a completed
 release or a guarantee of provider availability or affordable completion.
 
 The existing GPT r6 trial files, scores, human confirmations and original D5 lock
@@ -78,54 +79,34 @@ data; they are never published as the release lock.
 
 ## Budget is a separate completion constraint
 
-The repair leaves the common **USD 0.035 per-trial stop threshold and USD 2.50
-per-job threshold** unchanged. A returned charge can exceed a threshold while a
+At PR #29, the repair left the common **USD 0.035 per-trial stop threshold and
+USD 2.50 per-job threshold** unchanged. A returned charge can exceed a threshold while a
 request is already in flight. The tests establish prompt stopping and retained
 accounting, not a provider-enforced maximum bill or a guarantee of 70 responses.
 
 For scale only, applying the [Haiku standard USD 1/5 per million token prices](https://openrouter.ai/anthropic/claude-haiku-4.5)
 to GPT r6's measured input and non-reasoning output yields **USD 1.556622** over
 70 trials. The largest re-priced trial is **USD 0.040475**, and five exceed
-the current USD 0.035 threshold. This is a reference calculation, **not a Haiku
+the then-current USD 0.035 threshold. This is a reference calculation, **not a Haiku
 forecast**: its token lengths, reasoning and number of calls will differ.
 
-Consequently the current limits may intentionally stop Haiku partway through a
+Consequently those old limits could intentionally stop Haiku partway through a
 job even after the parameter repair. Do not describe that as guaranteed full-run
 readiness, raise limits silently, lower max_steps to improve apparent affordability,
-or retry failures to improve scores. Resolve the common budget policy before
-freezing the next formal release, then inspect actual cost after one smoke and
-four more scheduled cases before a 65-trial continuation. A key-authentication
+or retry failures to improve scores. PR #30 subsequently resolved the common budget
+policy before the later formal release. Inspect actual cost at the cohort checkpoints
+in the current runbook. A key-authentication
 HTTP 200 establishes neither balance nor generation access.
 
-## Frozen-version decision before release
+## Subsequent release
 
-The revised assignment's D5(b) says the comparison uses the same commit and v2
-prompt, with MODEL as the changing variable (the declared fixed-model v1 job is
-the explicit exception). This repair changes both runtime and requested settings.
-It therefore **cannot simply relabel GPT r6 as a run of the repaired release**.
-The unchanged lock and strict result identity checks deliberately prevent that.
+PR #30 merged the common USD 0.08 / 2.80 caps and decimal boundary repair. PR #31
+merged the later interface audit and explicit empty-stop handling; PR #32
+published `D5_LOCK.json` from that clean merged runtime. Its baseline is
+`1dc27cfbe257901c8e38243acb420f154a1d5664`.
 
-Two distinct outcomes must not be confused:
-
-1. GPT r6 remains complete historical evidence: 70 trials, final 33/70, cost
-   USD 0.73754105, with the original code/settings manifest and confirmed reviews.
-2. A formal table pooling that battery with newly repaired-version jobs is not
-   established as compliant merely because prompts, fixtures and scores are unchanged.
-
-The strict same-version route is a new common locked release and a new formal
-battery under it, preserving r6 separately. This entails another paid GPT battery
-and is **not authorized or started by this patch**. The alternative requires an
-explicit instructor acceptance of disclosed compatibility-only version differences;
-the assistant cannot invent that exception or assert that approval was given.
-
-Before further payment, decide this comparison issue and the common budget policy.
-Then merge the complete runtime/configuration repair, create the lock from that
-clean merged baseline in a separate lock-only change, and verify it. Every member
-uses the same selected release, a fresh designated output path and their own key.
-Do not use archived r3/r5/r6 directories for a changed baseline.
-
-The current `D5_LOCK.json` intentionally remains old, so verification of this
-repair checkout must fail on the changed config/backend/runner until a legitimate
-new release is made. Do not bypass verification, manually substitute old hashes,
-or relax the result validator to hide version drift. No live command is supplied
-by this repair note. Work ends after the reviewable patch and evidence are saved.
+The formal battery now plans five new collections on one exact checkout commit
+and the published lock, including GPT. Historical r6 remains complete at 33/70,
+USD 0.73754105, with original manifests and reviews; it is outside the new formal
+comparison. Members use the designated fresh `r7` paths and their own keys.
+See the current runbook for the cohort's first-1, first-5 and remaining-65 gates.

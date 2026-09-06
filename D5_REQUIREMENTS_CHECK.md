@@ -1,22 +1,22 @@
 # Teacher-source and D5 readiness check — 6 September 2026
 
-**Superseding operational decision:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
-retains GPT r6 with explicit disclosure and records the all-five-job audit. It does
-not override the teacher's same-commit requirement or claim instructor approval.
-Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for current execution order. The
-parameter blocker and release hold below describe the earlier audited revision.
+**Current collection plan:** all five new jobs use one exact frozen checkout and
+the published lock. Jobs 1–4 compare four families with v2; jobs 4–5 compare the
+fixed Gemini model with v2/v1. Historical GPT r6 is outside the new formal table.
+The parameter repair, budget repair, interface audit and separate lock have merged
+in PRs #29–#32. Use [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) for execution and
+[D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md) for the later evidence.
 
-**Historical source audit at `3ac1fad`.** The subsequent parameter repair and
-its validation are recorded in [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md).
-The source conclusions below remain the audit of that earlier main, not a claim
-that the repaired runtime still sends both parameters. The paid-run hold remains
-until a common release/comparison decision and budget review are complete.
+**Historical source audit at `3ac1fad`.** The body below records the evidence and
+blockers at that earlier revision. Its 138-test result, old prices/caps and
+unresolved Haiku finding are historical; they are not current startup instructions.
+Personal environment, key/balance checks and actual provider trials remain pending.
 
-## Decision and audit scope
+## Historical decision and audit scope
 
-**Do not start the next paid job yet.** Job 1 r6 is valid and complete, but the
-current Haiku 4.5 request has a documented sampling-parameter compatibility risk
-that existing preflight and synthetic-provider tests do not detect. The whole
+At the audited revision, job 1 r6 was valid and complete, but the Haiku 4.5 request
+had a documented sampling-parameter compatibility risk that the then-existing
+preflight and synthetic-provider tests did not detect. The whole
 assignment is also not yet complete: other D5 jobs, D6, D7 and submission work remain.
 
 Audited main: `3ac1fadce52ad8bb43986dc3ec12750b822b594c` (PR #27 merged).
@@ -45,7 +45,7 @@ Student pasted terminal output and old paid failure logs are experimental eviden
 not teacher instructions. The declaration was inspected, but GitHub cannot verify
 whether its NTULearn submission receipt exists.
 
-## Requirements against current evidence
+## Requirements against evidence at the audited revision
 
 | Requirement | Evidence and current status |
 | --- | --- |
@@ -96,7 +96,7 @@ keyless jobs 2–5 preflights report valid without creating output directories.
 vendor's accepted combination of generation parameters. Their fabricated low costs
 also cannot establish actual affordability of every model.
 
-## Unresolved provider compatibility blocker
+## Provider compatibility blocker found at the audited revision
 
 `config/d5_jobs.json` requests `temperature=0`, `top_p=1`, `max_tokens=4096`.
 `src/live_backend.py::call_live_model` forwards all three fields unchanged.
@@ -124,23 +124,20 @@ serialized request contained both sampling fields. The simulated HTTP 400 produc
 ```
 
 This is a **documented-contract simulation, not an observed live OpenRouter error**.
-It confirms that the current application would only catch that refusal after an
+It confirmed that the audited application would only catch that refusal after an
 attempt, rather than rejecting the incompatible settings locally. No provider
 normalization that safely removes the conflict was established in this audit.
 
-Before another paid job, resolve the shared request policy and add an offline
-provider-contract regression. A concrete candidate is a common temperature-only
-request (omit top_p for every job), but that changes the frozen requested settings.
-It must not be silently applied to one member or retrospectively written into the
-GPT manifest. Any repair requires an explicit baseline/comparison decision and
-updated lock before payment. The strict same-code/settings requirement prevents
-claiming that an arbitrary changed-baseline pool is automatically compliant.
-Preserve the completed GPT battery and all existing provenance; this audit does
-not order a paid rerun or claim its recorded results are invalid.
+The subsequent PR #29 implemented a common temperature-only request for every
+job and an independent provider-contract regression. PRs #30–#32 completed the
+budget change, further interface audit and replacement lock. The original GPT
+manifest remains unchanged. The new collection plan uses the common final version
+for every formal row; see the result index and current runbook.
 
-## Spending and next-member boundary
+## Historical spending finding and current follow-through
 
-Current stop thresholds are USD 0.035 per trial and USD 2.50 per job. An in-flight
+At the audited revision, stop thresholds were USD 0.035 per trial and USD 2.50 per
+job. PR #30 replaced them with USD 0.08 / 2.80. An in-flight
 request can cross a returned-cost threshold; it is not a hard provider billing cap.
 Balance, key ownership, route availability and actual generation charges for the
 four pending members are not established by offline tests or public listings.
@@ -152,12 +149,9 @@ largest individual trial around USD 0.0405, already above the common per-run sto
 threshold. This is **not a Haiku forecast**: its reasoning, lengths and tool turns
 will differ. Do not raise caps or promise all 70 will finish based on this example.
 
-After resolving the compatibility and baseline issue, verify the chosen release
-and an unused output path, run keyless preflight, privately enter the assigned
-member's own key, then inspect one paid smoke and four additional scheduled cases
-before authorizing the remaining 65. Ordinary model errors remain results;
-shared system/provider errors stop investigation before further paid work.
-
-This document and status update change no runtime, configuration, lock, raw trial,
-score or confirmed judgement. The audit ends with a recorded blocker rather than
-an unsupported assurance that every pending model is ready.
+For the current release, each member verifies the same pinned checkout and lock,
+their unused designated path, keyless preflight, private key ownership and remaining
+budget. The first-1 and first-5 checkpoints apply to all five members before any
+remaining 65. Ordinary model errors remain results; system/provider errors stop the
+affected job. No historical test result establishes current account credit or
+guarantees that every later provider request will work.

@@ -1,0 +1,224 @@
+{
+  "checked_date": "2026-09-06",
+  "scope": "Repository preparation only; no account or live-provider validation",
+  "preparation_base_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+  "published_lock": {
+    "valid": true,
+    "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+    "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+    "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0"
+  },
+  "locked_files_verified": 19,
+  "audited_runtime_and_test_sources_unchanged": true,
+  "reused_simulation_evidence": {
+    "path": "results/d5-readiness/cross_model_audit.json",
+    "sha256": "a6219847336139cdd9c4db09af83e577eac1707ed265db70a761c192f3b81615",
+    "tests_run_previously": 31,
+    "tests_passed_previously": true,
+    "full_battery_jobs": [
+      {
+        "job": 1,
+        "model": "openai/gpt-5-mini",
+        "prompt_version": "v2",
+        "simulated_trials": 70,
+        "stages": [
+          1,
+          4,
+          65
+        ]
+      },
+      {
+        "job": 2,
+        "model": "qwen/qwen3-30b-a3b-instruct-2507",
+        "prompt_version": "v2",
+        "simulated_trials": 70,
+        "stages": [
+          1,
+          4,
+          65
+        ]
+      },
+      {
+        "job": 3,
+        "model": "anthropic/claude-haiku-4.5",
+        "prompt_version": "v2",
+        "simulated_trials": 70,
+        "stages": [
+          1,
+          4,
+          65
+        ]
+      },
+      {
+        "job": 4,
+        "model": "google/gemini-2.5-flash-lite",
+        "prompt_version": "v2",
+        "simulated_trials": 70,
+        "stages": [
+          1,
+          4,
+          65
+        ]
+      },
+      {
+        "job": 5,
+        "model": "google/gemini-2.5-flash-lite",
+        "prompt_version": "v1",
+        "simulated_trials": 70,
+        "stages": [
+          1,
+          4,
+          65
+        ]
+      }
+    ],
+    "late_fault_scenarios": {
+      "model_or_provider": 60,
+      "price_spike": 15,
+      "positions": [
+        6,
+        35,
+        70
+      ]
+    },
+    "full_suite_repeated_this_preparation": false
+  },
+  "new_checks": {
+    "all_five_keyless_preflights_pass": true,
+    "all_five_designated_outputs_remain_absent": true,
+    "runbook_shell_syntax_pass": true,
+    "offline_refresh_rejects_69_without_writes_or_calls": true,
+    "offline_refresh_completes_70_without_provider_calls": true,
+    "offline_refresh_preserves_raw_trials_and_review_decisions": true,
+    "offline_refresh_rejects_concurrent_writer_and_unresolved_checkpoint": true,
+    "refresh_workflow_synthetic_trials": 70,
+    "historical_result_hashes_unchanged": true,
+    "whitespace_check_pass": true
+  },
+  "preflights": [
+    {
+      "mode": "preflight",
+      "valid": true,
+      "network_requests": 0,
+      "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+      "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+      "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0",
+      "member": "TU WEIKANG",
+      "model": "openai/gpt-5-mini",
+      "prompt_version": "v2",
+      "family": "OpenAI GPT",
+      "price_tier": "tier_2",
+      "output": "results/d5/job1-tu-weikang-r7",
+      "existing_attempts": 0,
+      "remaining_unattempted_trials": 70,
+      "max_new_runs": 1,
+      "next_run_id": "d4-clm-8842-t1",
+      "live_max_steps": 8
+    },
+    {
+      "mode": "preflight",
+      "valid": true,
+      "network_requests": 0,
+      "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+      "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+      "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0",
+      "member": "CHEN KE",
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "prompt_version": "v2",
+      "family": "Qwen",
+      "price_tier": "tier_1",
+      "output": "results/d5/job2-chen-ke-r7",
+      "existing_attempts": 0,
+      "remaining_unattempted_trials": 70,
+      "max_new_runs": 1,
+      "next_run_id": "d4-clm-8842-t1",
+      "live_max_steps": 8
+    },
+    {
+      "mode": "preflight",
+      "valid": true,
+      "network_requests": 0,
+      "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+      "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+      "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0",
+      "member": "KANG XINGYAO",
+      "model": "anthropic/claude-haiku-4.5",
+      "prompt_version": "v2",
+      "family": "Anthropic Claude",
+      "price_tier": "tier_2",
+      "output": "results/d5/job3-kang-xingyao-r7",
+      "existing_attempts": 0,
+      "remaining_unattempted_trials": 70,
+      "max_new_runs": 1,
+      "next_run_id": "d4-clm-8842-t1",
+      "live_max_steps": 8
+    },
+    {
+      "mode": "preflight",
+      "valid": true,
+      "network_requests": 0,
+      "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+      "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+      "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0",
+      "member": "YAO FANGXUAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v2",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "output": "results/d5/job4-yao-fangxuan-r7",
+      "existing_attempts": 0,
+      "remaining_unattempted_trials": 70,
+      "max_new_runs": 1,
+      "next_run_id": "d4-clm-8842-t1",
+      "live_max_steps": 8
+    },
+    {
+      "mode": "preflight",
+      "valid": true,
+      "network_requests": 0,
+      "baseline_commit": "1dc27cfbe257901c8e38243acb420f154a1d5664",
+      "head_commit": "afe9407097f9dc3e02b2217059fa91e9e2b383bd",
+      "lock_hash": "146704d01e9b4105fcdee2efa7b01c329624b8bd2415b9b09cab0832fad639a0",
+      "member": "HUANG YIHAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v1",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "output": "results/d5/job5-huang-yihan-r7",
+      "existing_attempts": 0,
+      "remaining_unattempted_trials": 70,
+      "max_new_runs": 1,
+      "next_run_id": "d4-clm-8842-t1",
+      "live_max_steps": 8
+    }
+  ],
+  "historical_result_sha256": {
+    "results/d5/job1-tu-weikang/human_review_annotations.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang/job_manifest.json": "b5eaa21bcb0e5b7975de35f277af2d2c1e07c43758b60a7a7e55e1d91d9b8570",
+    "results/d5/job1-tu-weikang/judgement_queue.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang/summary.json": "78833af36cb7f5d7ddbb956deca91f668a835ef10aeb0e51becec469234221db",
+    "results/d5/job1-tu-weikang/trials.jsonl": "d25fb5e890b6854eeedca336fd5df68cd233316ffe5eeb5e208ac595375220eb",
+    "results/d5/job1-tu-weikang-r5/human_review_annotations.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang-r5/job_manifest.json": "668c1a812e46fdc8ef862ef6f808c994539653fb692863acdccffafb4134f11b",
+    "results/d5/job1-tu-weikang-r5/judgement_queue.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "results/d5/job1-tu-weikang-r5/summary.json": "78833af36cb7f5d7ddbb956deca91f668a835ef10aeb0e51becec469234221db",
+    "results/d5/job1-tu-weikang-r5/trials.jsonl": "41aa199741ebd031e01ef2d5b0bd8d548960fc1ade646fead89c9c09d7fb425e",
+    "results/d5/job1-tu-weikang-r6/REVIEW_RECORD.md": "47efb1aed1ebbb79d5627f8c740902539b2cb493633d340f119131f850a76f34",
+    "results/d5/job1-tu-weikang-r6/human_review_annotations.json": "d8bbfdb02e3ff718eb12c26a24c4da5d936e31eceab73db717fb6cb69c4c6709",
+    "results/d5/job1-tu-weikang-r6/job_manifest.json": "613bee7fea8b0221321f805962489ef14edf9e808bdb931bb0f16e3f6595fb6f",
+    "results/d5/job1-tu-weikang-r6/judgement_queue.json": "5504d66748c28abcbcc8e92181860d23ac8cd47d01bf1f613d10380f5d010be1",
+    "results/d5/job1-tu-weikang-r6/summary.json": "5d599f20e1b74d61e0edb4bd1d1a9a16339d89ebadd4dec25d155b2155c190c9",
+    "results/d5/job1-tu-weikang-r6/trials.jsonl": "350efe06feb89522a4042d9a035a32ab4d61d030510c8d20d16cc8dc108587bb"
+  },
+  "network_attempts": 0,
+  "paid_model_calls": 0,
+  "pending_before_first_paid_trial": [
+    "Upload/merge preparation and choose its full merge SHA for every member",
+    "Verify each member checkout, working tree, storage and designated output",
+    "Privately confirm own key, actual remaining allowance and earlier course spending"
+  ],
+  "pending_live_evidence": [
+    "Actual model access, route, responses, usage and billing for all five jobs",
+    "All-five first-1 and first-5 reviews before any remaining 65; GPT remaining 65 last"
+  ]
+}
