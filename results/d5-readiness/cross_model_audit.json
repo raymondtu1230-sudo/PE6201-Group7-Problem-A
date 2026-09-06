@@ -1,0 +1,267 @@
+{
+  "audit_date": "2026-09-06",
+  "scope": "offline targeted audit, not live-provider validation",
+  "tests_run": 31,
+  "tests_passed": true,
+  "network_attempts": 0,
+  "paid_model_calls": 0,
+  "r6_unchanged": true,
+  "r6": {
+    "trial_count": 70,
+    "original_summary": {
+      "completed_model_responses": 70,
+      "cost_evidence_missing": false,
+      "final_pass_rate": 0.4714285714285714,
+      "judgements_pending": false,
+      "negative_pass_rate": 0.16666666666666666,
+      "status": "complete"
+    },
+    "maximum_trial_cost_usd": "0.02133245",
+    "total_cost_usd": "0.7375410500000000001",
+    "halt_reasons": {
+      "final": 66,
+      "malformed_action": 3,
+      "malformed_json": 1
+    },
+    "all_stored_code_checks_reproduced": true,
+    "new_empty_stop_branch_applicable": false,
+    "sha256": {
+      "REVIEW_RECORD.md": "47efb1aed1ebbb79d5627f8c740902539b2cb493633d340f119131f850a76f34",
+      "human_review_annotations.json": "d8bbfdb02e3ff718eb12c26a24c4da5d936e31eceab73db717fb6cb69c4c6709",
+      "job_manifest.json": "613bee7fea8b0221321f805962489ef14edf9e808bdb931bb0f16e3f6595fb6f",
+      "judgement_queue.json": "5504d66748c28abcbcc8e92181860d23ac8cd47d01bf1f613d10380f5d010be1",
+      "summary.json": "5d599f20e1b74d61e0edb4bd1d1a9a16339d89ebadd4dec25d155b2155c190c9",
+      "trials.jsonl": "350efe06feb89522a4042d9a035a32ab4d61d030510c8d20d16cc8dc108587bb"
+    }
+  },
+  "runtime_sha256": {
+    "src/live_backend.py": "3d6f5ad35d81569f956a273a8a61a1bf6d5e1b27eb574ca954a23f87e9c9c17d",
+    "src/claim_agent.py": "e265b1b04c0a0cd120f6dbeeb73bd088e8eaafd25336b2dd73ba5ddf393ecdfe",
+    "scripts/d5_safety.py": "a888d8f600f7700240f9e422b276cd5178b177d57e5c2c45dcb7f27b1ead6cc6",
+    "scripts/run_d5_live.py": "2c67e92a65367dfb0773a2406434a9f7c83600efd2d032ba9819c59f4055fb79",
+    "config/d5_jobs.json": "2c5784cb53cde067e294994965ca9dedb3171151b6023fd76e8640bcf701a293"
+  },
+  "prompt_hashes": {
+    "v1": "c8298c0c8fcb555484c2a0f10b65aeaa02f49fbe04b2869110ae5db2a1463e78",
+    "v2": "5e88a7adec6cee133cbc8693d07f33897b519f6186fcf2e0cee2c6a8114d1a17"
+  },
+  "wire_requests": [
+    {
+      "job": 1,
+      "member": "TU WEIKANG",
+      "model": "openai/gpt-5-mini",
+      "prompt_version": "v2",
+      "family": "OpenAI GPT",
+      "price_tier": "tier_2",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 2,
+      "member": "CHEN KE",
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "prompt_version": "v2",
+      "family": "Qwen",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 3,
+      "member": "KANG XINGYAO",
+      "model": "anthropic/claude-haiku-4.5",
+      "prompt_version": "v2",
+      "family": "Anthropic Claude",
+      "price_tier": "tier_2",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 4,
+      "member": "YAO FANGXUAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v2",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "4bcbcce97f629af2cb0b2ec9272f36b6b091e2baadd873bac44aee5fa2be003a",
+      "native_tools_sent": false
+    },
+    {
+      "job": 5,
+      "member": "HUANG YIHAN",
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v1",
+      "family": "Google Gemini",
+      "price_tier": "tier_1",
+      "body_fields": [
+        "max_tokens",
+        "messages",
+        "model",
+        "temperature"
+      ],
+      "requested_settings": {
+        "temperature": 0,
+        "max_tokens": 4096
+      },
+      "message_roles": [
+        "system",
+        "user",
+        "assistant",
+        "user"
+      ],
+      "messages_sha256": "0f7c884ef5ada35da88722390ac07fce395964c05d51039117c37723458f1060",
+      "native_tools_sent": false
+    }
+  ],
+  "test_selection": [
+    "test_d5_documented_stops",
+    "test_d5_team_safety.TeamSafety.test_all_five_jobs_staged_1_4_65_own_keys_and_aggregation",
+    "test_d5_team_safety.TeamSafety.test_late_failures_all_jobs_positions_6_35_70",
+    "test_d5_provider_contracts.ProviderContracts.test_late_price_spike_all_jobs_retains_charge_and_stops",
+    "test_d5_provider_contracts.ProviderContracts.test_exact_job_budget_allows_last_reserved_trial_then_stops",
+    "test_d5_team_safety.TeamSafety.test_http_failures_keep_earlier_cost_and_stop",
+    "test_d5_team_safety.TeamSafety.test_interrupt_keeps_journal_and_blocks_automatic_replay",
+    "test_d5_team_safety.TeamSafety.test_program_error_keeps_returned_response_before_parsing",
+    "test_d5_team_safety.TeamSafety.test_append_failure_keeps_scored_row_and_recovers_once",
+    "test_d5_team_safety.TeamSafety.test_second_writer_cannot_call_provider",
+    "test_live_conversation",
+    "test_d5_provider_contracts.ProviderContracts.test_all_jobs_wire_uses_same_two_requested_settings",
+    "test_d5_provider_contracts.ProviderContracts.test_haiku_legacy_combination_rejected_before_transport",
+    "test_d5_provider_contracts.ProviderContracts.test_old_r6_cannot_be_silently_resumed_under_changed_settings",
+    "test_d5_runner_contracts.D5RunnerContracts.test_paid_null_content_is_retained_and_not_retried",
+    "test_d5_runner_contracts.D5RunnerContracts.test_all_http_success_malformed_shapes_are_paid_failures",
+    "test_d5_runner_contracts.D5RunnerContracts.test_per_run_provider_cost_stops_second_call",
+    "test_d5_team_safety.TeamSafety.test_http_200_errors_stop_and_keep_partial_text_and_usage",
+    "test_d5_team_safety.TeamSafety.test_unknown_cost_retains_known_lower_bound_blocks_new_spend"
+  ],
+  "full_battery_jobs": [
+    {
+      "job": 1,
+      "model": "openai/gpt-5-mini",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 2,
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 3,
+      "model": "anthropic/claude-haiku-4.5",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 4,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v2",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    },
+    {
+      "job": 5,
+      "model": "google/gemini-2.5-flash-lite",
+      "prompt_version": "v1",
+      "simulated_trials": 70,
+      "stages": [
+        1,
+        4,
+        65
+      ]
+    }
+  ],
+  "late_fault_scenarios": {
+    "model_or_provider": 60,
+    "price_spike": 15,
+    "positions": [
+      6,
+      35,
+      70
+    ]
+  }
+}

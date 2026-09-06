@@ -1,235 +1,207 @@
-# D5 live-model battery
+# D5 live-model battery: current operating sequence
 
-**Status, 6 September 2026: job 1 r6 complete; jobs 2–5 pending.**
-Job 1 has 70 retained trials and six human-confirmed judgements; final success is
-33/70 and recorded cost is USD 0.73754105. Its canonical path is
-`results/d5/job1-tu-weikang-r6`. Earlier r3/r5 paths are audit-only pilots.
+Updated 6 September 2026. The interface audit and decision record are in
+[D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md). This sequence replaces the old
+r3/r5 examples; those results remain historical evidence, not continuation targets.
 
-**Hold new paid jobs.** The repaired common request uses `temperature=0` and
-`max_tokens=4096`, omitting `top_p` for every model. Preflight and the direct
-provider boundary now reject the known incompatible combination. This changes
-the frozen configuration: the retained D5 lock intentionally still identifies
-the old release and must refuse this changed runtime. No replacement release or
-paid rerun is authorized by this repair. See [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md)
-for parameter validation and [D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md) for the agreed
-spending policy. The common-version comparison and replacement lock are still
-unresolved. Live command
-examples below are historical reference, not instructions to start a pending job.
+## Retained GPT and pending jobs
 
-## Two-stage baseline lock
+TU WEIKANG's r6 remains at `results/d5/job1-tu-weikang-r6`: 70 trials, 33 final
+passes / 37 failures, USD 0.73754105, six confirmed reviews. Keep its original lock,
+manifest and data. No paid GPT rerun is currently authorized. All five jobs have
+full offline rehearsals, including GPT if a later collection becomes necessary.
+The user selected retention with explicit version/settings disclosure; this is
+not instructor approval of the deviation from the same-commit D5(b) requirement.
 
-The existing released baseline is `7e1657220534de48d48fa1c639ee75903469204b`,
-with lock-only release `bad40060c0ba77b214de3317ca16e8b12a0700ec`. A new member
-verifies the existing lock; they do not regenerate it just to start their job.
-The following describes the release procedure only when a baseline actually changes.
-After a runtime preparation PR is merged, check out that exact clean merged baseline and run
-`PYTHONPATH=. python3 scripts/create_d5_lock.py --output D5_LOCK.json`. The generator
-refuses dirty evaluation-critical files. Commit only the generated lock in a later
-lock-only commit. `--verify D5_LOCK.json` accepts that descendant commit because it
-checks ancestry and the locked file contents rather than requiring the lock commit to
-be the baseline itself. Any drift in fixtures, agent/backend, scorer, runner, job
-configuration, prompts/descriptors, or schedule blocks execution.
+| Job | Member | Model | Prompt | New collection directory |
+| --- | --- | --- | --- | --- |
+| 1 | TU WEIKANG | `openai/gpt-5-mini` | v2 | `results/d5/job1-tu-weikang-r7` — reserved, only if a new collection is later authorized |
+| 2 | CHEN KE | `qwen/qwen3-30b-a3b-instruct-2507` | v2 | `results/d5/job2-chen-ke-r7` |
+| 3 | KANG XINGYAO | `anthropic/claude-haiku-4.5` | v2 | `results/d5/job3-kang-xingyao-r7` |
+| 4 | YAO FANGXUAN | `google/gemini-2.5-flash-lite` | v2 | `results/d5/job4-yao-fangxuan-r7` |
+| 5 | HUANG YIHAN | `google/gemini-2.5-flash-lite` | v1 | `results/d5/job5-huang-yihan-r7` |
 
-## Staged execution
+Each job runs the same 50 cases: 40 ordinary trials plus 10 negative cases repeated
+three times, totalling 70 trials. The seven-case authoring assignments do not divide
+this schedule. Fixed requested settings are temperature=0 and max_tokens=4096,
+with no top_p. The maximum is 8 agent steps. Requested sampling settings need not
+be equally effective across providers; see the audit's interface limitations.
 
-The default runner prints the planned battery dimensions only; it does not verify the
-lock. Use `--preflight` with a job, output and baseline lock for the actual keyless,
-read-only validation. Live use later requires `--backend
-live`, `--confirm-live`, `--baseline-lock`, a job/output, `OPENROUTER_API_KEY`, and a
-positive bounded `--max-new-runs` value. The first invocation must use
-`--max-new-runs 1`. Inspect the retained trial, complete evidence, immutable job
-manifest, and incomplete validation output. Then resume from the identical lock and
-output directory with a bounded continuation count. Completed model responses are
-never rerun. An automatic scoring failure is valid experimental evidence of model
-behaviour: it is retained and the bounded batch continues to later scheduled trials.
-Lock, configuration, schedule, and live-message protocol defects fail locally before
-the provider is called. Transport, authentication, provider/HTTP, or unusable paid
-response failures are recorded and stop the current command immediately with a nonzero
-status. Only a genuine unresolved pre-response transport failure may be retried later.
-Hitting either the per-run or job spending cap also stops the current command, after
-retaining any billed attempt. The cap uses returned usage: a request already in flight
-may cross the per-run threshold, so it is a stop threshold, not a provider-enforced
-guarantee on the final charge.
+## Release and local state
 
-Malformed model text is retained verbatim in the trace and scored as a model failure.
-A judged case without a decision record remains a failed, reviewable result; an absent
-reason does not invalidate the entire battery. Reviews cannot turn a code failure into
-a pass. The public decision contract declares the routing rules, trigger codes and
-missing-item formats for all models; the answer key is never included in model input.
+The runtime/audit PR is merged first. A maintainer then uses a clean checkout of
+that exact merged commit to generate the lock and publishes only `D5_LOCK.json`
+in a separate PR. The lock records the baseline, critical file hashes, prompts and
+schedule. Never edit hashes or regenerate a lock just to make a member's checkout
+pass. A documentation-only or lock-only descendant can verify against the baseline.
 
-Cases remain sequential. “Parallel” means independent tool calls inside one ReAct
-turn. A fresh agent and temporary decision log are used per trial. Live `max_steps` is
-8: current parallel scripted evidence has a maximum of 6 model calls, providing a
-controlled two-turn margin.
-
-The six judged cases receive one queue item per case, not one per trial. Required
-reviews remain pending until a reviewer supplies a substantive note. Final rates
-combine recomputed code checks and those reviews. Cost is provider-measured, calculated
-from dated configured pricing, or `null`; unavailable cost evidence cannot be finally
-validated or aggregated. D4's scripted 100% is a regression baseline, never a live score.
-
-## Exact operator runbook
-
-Required order: **preparation PR merged → clean merged `main` checked out → lock
-generated → lock-only commit merged → one-run smoke test → validation → bounded
-continuation → human review → final validation → aggregation**.
-
-Every member must privately set `OPENROUTER_API_KEY` in their own environment using
-their own key. Never paste its value into a command, result, notebook, chat, or Git file.
-On a shared terminal, clear the preceding member's environment variable and enter the
-current member's key again using a hidden prompt. An existing variable or a manifest
-member name does not establish key ownership. Each member runs all 50 cases / 70 trials;
-the separate seven-case authoring blocks do not partition the D5 evaluation schedule.
+Only the release maintainer runs generation, from the clean merged baseline:
 
 ```bash
-# Zero-network plan display (not a lock check)
-python3 scripts/run_d5_live.py
-
-# On clean merged main: generate, verify, then submit D5_LOCK.json as a lock-only commit
-PYTHONPATH=. python3 scripts/create_d5_lock.py --output D5_LOCK.json
-PYTHONPATH=. python3 scripts/create_d5_lock.py --verify D5_LOCK.json
-git add D5_LOCK.json && git commit -m "Lock D5 evaluation baseline"
+python3 scripts/create_d5_lock.py --output D5_LOCK.json
+python3 scripts/create_d5_lock.py --verify D5_LOCK.json
 ```
 
-After the lock-only commit is merged, each assigned member runs only their job. The
-first retained trial is always one run:
+The runtime PR alone is not a paid release: the old lock must reject it until the
+separate replacement lock is merged. After release, members verify the committed
+lock. They do not generate their own locks or use a temporary test lock.
 
-Before entering an API key, run the actual preflight against the intended directory
-(use a new directory for a changed baseline, and keep earlier paid evidence):
+The assistant's checkout is separate from a member's Codespaces. Give the operator
+one command group at a time and wait for the complete output. The first group is
+exactly:
 
 ```bash
-env -u OPENROUTER_API_KEY python3 scripts/run_d5_live.py --preflight --job 1 --output results/d5/job1-tu-weikang-r5 --baseline-lock D5_LOCK.json --max-new-runs 1
+git status --short --branch
 ```
 
-It validates the lock, schema, message roles, configuration, schedule and any existing
-job/result identity without constructing an agent or creating output files. All later
-commands must use that same chosen output directory; the paths below are examples for
-the five job identities, not instructions to reuse an obsolete baseline's results.
+Inspect local changes before any synchronization. Preserve every result and local
+edit; do not use `git reset --hard`. On a confirmed clean checkout, synchronize
+`main` with a fast-forward pull, then inspect the full HEAD and verify the lock:
 
 ```bash
-# Job 1 — TU WEIKANG
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 1
-python3 scripts/validate_d5_results.py results/d5/job1-tu-weikang --lock D5_LOCK.json --allow-incomplete
-# Job 2 — CHEN KE
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 2 --output results/d5/job2-chen-ke --max-new-runs 1
-python3 scripts/validate_d5_results.py results/d5/job2-chen-ke --lock D5_LOCK.json --allow-incomplete
-# Job 3 — KANG XINGYAO
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 3 --output results/d5/job3-kang-xingyao --max-new-runs 1
-python3 scripts/validate_d5_results.py results/d5/job3-kang-xingyao --lock D5_LOCK.json --allow-incomplete
-# Job 4 — YAO FANGXUAN
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 4 --output results/d5/job4-yao-fangxuan --max-new-runs 1
-python3 scripts/validate_d5_results.py results/d5/job4-yao-fangxuan --lock D5_LOCK.json --allow-incomplete
-# Job 5 — HUANG YIHAN
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 5 --output results/d5/job5-huang-yihan --max-new-runs 1
-python3 scripts/validate_d5_results.py results/d5/job5-huang-yihan --lock D5_LOCK.json --allow-incomplete
+git rev-parse HEAD
+python3 scripts/create_d5_lock.py --verify D5_LOCK.json
 ```
 
-Only after inspecting each retained smoke result, resume its same directory with a
-bounded continuation (69 is the maximum remaining after one successful response).
+Compare the baseline and lock hash with the merged lock-only PR. Confirm that the
+member's selected new directory is unused before the first trial. Subsequent stages
+must use that same directory and immutable manifest. Do not create a different
+copy on another machine to run the same job concurrently.
 
-An optional five-case burn-in can first add four trials. All four are retained even if
-one or more model answers fail automatic scoring; those failures are part of the model
-evaluation. Afterward, inspect whether failures are ordinary case-specific model errors
-or a suspicious identical execution pattern before starting the remaining trials:
+## Keyless checks and private key entry
+
+For the current member, select the exact job/directory from the table. This example
+is the first cohort member, Haiku; it is not authorization to start paid execution:
 
 ```bash
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 4
+D5_JOB=3
+D5_OUTPUT=results/d5/job3-kang-xingyao-r7
+python3 scripts/run_d5_live.py --preflight --job "$D5_JOB" --output "$D5_OUTPUT" --baseline-lock D5_LOCK.json --max-new-runs 1
 ```
 
-After the smoke or burn-in is reviewed, continue the remaining scheduled trials:
+Preflight is keyless, read-only and zero-network. It checks the real lock, schedule,
+settings, dialogue contract and existing output; it does not prove account credit,
+model access or provider availability. For an empty directory it must show zero
+completed and 70 pending trials. A plan-only run without `--preflight` is not this
+verification. No real result directory is created by the release audit.
+
+Before paid execution, the current member privately checks their account balance
+and earlier D5 charges. Each member uses their own key. A manifest's member name
+and an existing environment variable cannot establish who owns a key. On a shared
+terminal clear the previous member's variable, then use a hidden input:
 
 ```bash
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 69
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 2 --output results/d5/job2-chen-ke --max-new-runs 69
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 3 --output results/d5/job3-kang-xingyao --max-new-runs 69
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 4 --output results/d5/job4-yao-fangxuan --max-new-runs 69
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 5 --output results/d5/job5-huang-yihan --max-new-runs 69
+unset OPENROUTER_API_KEY
+read -r -s -p 'Current member OpenRouter key: ' OPENROUTER_API_KEY
+export OPENROUTER_API_KEY
 ```
 
-Normal resume skips every run ID already written, including transport failures and
-paid malformed responses. A genuine pre-response transport failure may be retried only
-deliberately; this can incur another charge and must target one failed stable ID:
+Never paste a key into chat, Git, notebooks or literal shell commands, and never
+print the variable. Switch member, job, directory and key together; do not run a
+multi-model shell loop using one member's key. Clear the variable when finished.
+
+## Cohort checkpoints: 1, then 4, then 65
+
+The pending cohort order is Haiku (job 3), Qwen (job 2), Gemini v2 (job 4), Gemini
+v1 (job 5). Complete and inspect the first trial of **every** pending job before
+any job adds four. Complete and inspect all four five-trial sets before **any**
+job starts its remaining 65. If GPT is later newly authorized, put it through the
+same checkpoints under the released lock. Do not automatically restart r6.
+
+Only after the current member's environment/key/budget checks and authorization,
+run the first scheduled trial:
 
 ```bash
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 1 --retry-run-id d4-clm-8842-t1
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job "$D5_JOB" --output "$D5_OUTPUT" --max-new-runs 1
+python3 scripts/validate_d5_results.py "$D5_OUTPUT" --lock D5_LOCK.json --allow-incomplete
 ```
 
-Never use `--retry-run-id` for a paid/model response; the runner refuses it. Substitute
-the assigned job, directory, and audited failed run ID only after reviewing its row.
+Read the complete retained trace, manifest, trial and summary. Confirm the assigned
+model/prompt, actual assistant/Observation history, finished actions, provider
+response IDs, token usage and complete measured billing. Distinguish a model's
+wrong answer from a missing/misrepresented tool observation. A passing score is
+not required to pass this integration checkpoint; a protocol or billing problem
+must be resolved before continuing. Keep the failed response and its cost.
 
-For each directory, a human must truthfully review all six entries in
-`human_review_annotations.json`, changing `status` to `approved` or `rejected` and
-supplying their own nonblank `reviewer` and substantive `review_note`. Never bulk-copy
-D4 annotations or invent reviews. Then refresh the summary with a bounded resume command
-(the runner makes no request when all stable run IDs are complete), perform final
-validation, and aggregate:
+After the first-trial checkpoint passes for the whole cohort, each member can
+append four in their own unchanged directory:
 
 ```bash
-# Exact zero-request summary refresh after all 70 run IDs are present:
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 1 --output results/d5/job1-tu-weikang --max-new-runs 1
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 2 --output results/d5/job2-chen-ke --max-new-runs 1
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 3 --output results/d5/job3-kang-xingyao --max-new-runs 1
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 4 --output results/d5/job4-yao-fangxuan --max-new-runs 1
-python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job 5 --output results/d5/job5-huang-yihan --max-new-runs 1
-
-python3 scripts/validate_d5_results.py results/d5/job1-tu-weikang --lock D5_LOCK.json
-python3 scripts/validate_d5_results.py results/d5/job2-chen-ke --lock D5_LOCK.json
-python3 scripts/validate_d5_results.py results/d5/job3-kang-xingyao --lock D5_LOCK.json
-python3 scripts/validate_d5_results.py results/d5/job4-yao-fangxuan --lock D5_LOCK.json
-python3 scripts/validate_d5_results.py results/d5/job5-huang-yihan --lock D5_LOCK.json
-python3 scripts/aggregate_d5_results.py --lock D5_LOCK.json results/d5/job1-tu-weikang results/d5/job2-chen-ke results/d5/job3-kang-xingyao results/d5/job4-yao-fangxuan results/d5/job5-huang-yihan
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job "$D5_JOB" --output "$D5_OUTPUT" --max-new-runs 4
+python3 scripts/validate_d5_results.py "$D5_OUTPUT" --lock D5_LOCK.json --allow-incomplete
 ```
 
-The shared `max_tokens=4096` ceiling is identical across models. It is above the
-largest observed scripted response estimate (1,504 tokens) with more than 2.7× headroom while still
-bounding spend. The shared per-trial stop threshold is US$0.08 and the cumulative
-job threshold is US$2.80. Before starting a trial, the runner requires room for
-the whole US$0.08 reservation. These limits do not promise 70 completed trials or
-a provider-enforced final bill: an in-flight request may cross a threshold.
-Spending is measured from provider evidence, and cumulative totals across old
-directories and other assignments must also be considered. See
-[D5_BUDGET_PLAN.md](D5_BUDGET_PLAN.md); these are stop thresholds, not spending targets.
+Inspect all five traces and measured costs for every job. Estimate remaining spend
+using observed calls/tokens and costly cases, not only a cheap first trial. Five
+ordinary cases do not cover all negative cases or later failures. If the available
+budget cannot support continuation, pause and record that limitation instead of
+raising limits or opening a fresh directory.
 
-## Team safety audit and recovery
-
-See `D5_TEAM_READINESS.md` for the team-wide offline acceptance matrix. The live
-entry now enforces the same strict result validation as `--preflight`, under an
-exclusive operating-system lock for the output directory. A second runner fails
-before making a model call. Reserved output paths and actual write/fsync access are
-checked before spending. Never run two different directories for the same scheduled
-job: a directory lock cannot detect separate copies on separate machines.
-
-`active_trial.json` durably records each request's model input and each returned raw
-text, usage, response identifier and termination reason. It contains no Authorization
-header. Ordinary malformed actions remain scored model failures and the batch continues.
-Provider errors embedded in HTTP 200 stop the batch and retain their partial evidence.
-The checkpoint is removed only after the scored trial and derived files are saved.
-
-An interrupted or unprocessed checkpoint blocks further paid execution. Do not delete
-it or rerun the case to make it disappear. If the checkpoint already contains a scored
-row, this keyless command restores the row and summaries without calling a model:
+Only after the whole cohort's five-trial checkpoint is reviewed, continue each job:
 
 ```bash
-python3 scripts/run_d5_live.py --recover --job 1 --output YOUR_EXISTING_OUTPUT --baseline-lock D5_LOCK.json
+python3 scripts/run_d5_live.py --backend live --confirm-live --baseline-lock D5_LOCK.json --job "$D5_JOB" --output "$D5_OUTPUT" --max-new-runs 65
+python3 scripts/validate_d5_results.py "$D5_OUTPUT" --lock D5_LOCK.json --allow-incomplete
 ```
 
-For an in-flight or unscored response, recovery refuses automatic replay: retain the
-journal, inspect the response and reconcile any uncertain provider charge offline.
-`known_cost_usd` is the measured lower bound already returned; `cost_usd=null` or
-`billing_complete=false` means the complete bill is unresolved. Further paid execution
-is blocked until that evidence is reviewed and reconciled. Unknown charges are never
-silently entered as zero. An operating-system kill or loss of the storage device cannot
-be made transactional with a remote provider; preserve the pre-request checkpoint.
+The first five are part of the official 70 when the version remains unchanged;
+they are not extra trials. If a necessary repair changes the experiment, assess
+its impact and version consequences before making the change or spending again.
 
-Generation settings are shared requested settings. Providers may ignore parameters
-their model does not support; do not claim identical effective sampling solely because
-the request includes `temperature=0`. Inspect actual model identity and termination
-metadata in each member's smoke trace. Do not alter one member's prompt, limits or
-settings after seeing their score. A public model listing or successful key-auth check
-does not guarantee generation access, available balance, output quality or uptime.
+## Failures, costs and recovery
 
-The historical safety repair changed locked runtime files and was released through
-PRs #24/#25. It is already merged; do not repeat that lock-generation procedure
-merely because the next member joins.
-Existing r3/r5 pilot files retain their original baseline and cost evidence; do not
-rewrite their hashes or silently mix them into results from the repaired baseline.
+| Observation | Required action |
+| --- | --- |
+| Wrong answer, refusal, malformed model text, or repeated action with correctly supplied history | Preserve and score the failure; continue. Never tune code/prompts to improve the observed score. |
+| Empty answer with explicit filtering/output-limit/refusal evidence and complete billing | Preserve finish reason, refusal text and charge; score failure and continue. No fabricated answer or automatic retry. |
+| Network, authentication, explicit provider error, unknown empty response, malformed protocol or missing billing | Preserve evidence and known charges; stop the job and determine a safe recovery. |
+| Incorrect scoring or summary logic | Recompute offline from sufficient original traces; do not call the model again to fix a report. |
+| Runtime defect that changed supplied information or execution opportunities | List affected records, proposed repair and comparability consequences before modifying or recollecting. |
+
+The per-trial USD 0.08 and per-directory job USD 2.80 values are stopping thresholds,
+not account hard caps. An in-flight request can cross a threshold. The runner
+requires room for the full next trial allowance before starting it; reaching a
+cap is not a reason to change directories. Preserve earlier pilot charges as part
+of personal D5 spending. TU WEIKANG's archived r3/r5/r6 total is about USD 0.81427205,
+excluding other coursework. Actual remaining account balances are not known here.
+
+`active_trial.json` checkpoints requests and returned evidence before further calls.
+A disk failure or interruption can leave an unresolved checkpoint. Keep it: deleting
+it can erase evidence of a paid request. The recovery command is keyless:
+
+```bash
+python3 scripts/run_d5_live.py --recover --job "$D5_JOB" --output "$D5_OUTPUT" --baseline-lock D5_LOCK.json
+```
+
+Recovery only restores an already-scored row that failed to append. It does not
+replay an ambiguous request. An unresolved request requires offline billing/evidence
+reconciliation. Completed model/provider responses cannot be retried. A permitted
+transport retry is considered only after the original charge is known and the
+resume command has been specifically reviewed; there is no automatic retry loop.
+An output-directory process lock prevents a second writer in that directory, but
+cannot detect duplicated jobs in different directories or different machines.
+
+## Review and final comparison
+
+Six judged cases need truthful review annotations with substantive notes, one per
+case. Pending reviews are not passes. Reviews cannot override failed code checks.
+Test-fixture annotations in the simulations are not human reviews or experiment
+results. There is no paid judge model in this plan.
+
+After all 70 completed run IDs are already present and the required annotations
+are added, an invocation with `--max-new-runs 1` refreshes the summary without new
+model calls. Verify all 70 are present before using that procedure. Run final
+validation without `--allow-incomplete`:
+
+```bash
+python3 scripts/validate_d5_results.py "$D5_OUTPUT" --lock D5_LOCK.json
+```
+
+Aggregate only complete new-lock directories with the existing strict aggregator.
+Do not pass r6 to the new lock, rewrite its manifest, or weaken the validator.
+For the selected retained-GPT route, validate r6 in a separate historical checkout
+using its original release and lock; put its metrics beside the new results in a
+clearly labelled baseline/settings comparison table. State the same-commit deviation.
+If a new GPT run is later authorized and completed, it can join the same-lock
+aggregation while r6 remains separately preserved. D6 analysis, D7's two free
+fault-injection demonstrations, final report and video still require completion.

@@ -94,16 +94,18 @@ This is a configuration/budget repair on top of merged PR #29, main
 `7d1be4a59cde83661dc6171c0a20f5cc00651f91`. It does not run any paid test or change
 raw results, confirmed judgements, fixtures, model assignments or the old lock.
 
-The common-version question in [D5_PROVIDER_READINESS.md](D5_PROVIDER_READINESS.md)
-remains unresolved: old GPT r6 cannot be silently relabelled as a new-release run.
-Do not issue a replacement release lock until that comparison decision is clear.
-Then create the lock from the clean merged runtime/configuration baseline and
-merge the separate lock-only change. Verify it before any paid request.
+The subsequent selected decision in [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
+retains GPT r6 with explicit baseline/settings disclosure; it does not claim teacher
+approval of the same-commit deviation. No paid GPT rerun is currently authorized,
+but GPT is included in the full offline rehearsal in case one is later required.
+After the audit/repair is merged, create the lock from that clean merged baseline
+and publish it through a separate lock-only PR. Verify it before any paid request.
 
-For each approved job: use the assigned member's own key and the designated
-output directory; perform keyless preflight; inspect one paid smoke, then four
-additional scheduled trials. Use their actual cost and traces to review the
-remaining budget before continuing the remaining 65. These five responses are
+For the pending cohort, use each assigned member's own key and designated
+directory. After keyless preflight, inspect the first scheduled trial of every
+pending job (Haiku, Qwen, Gemini v2, Gemini v1). Only after all pass the integration
+checkpoint, append four per job. Review all four jobs' traces and costs before
+any member starts the remaining 65. These five responses are
 part of that job's 70, not five extra tests. Keep all ordinary model failures.
 If projected cost exceeds the available budget or a shared system error appears,
 stop for review instead of spending through all 70 or retrying successful responses.

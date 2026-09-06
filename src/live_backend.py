@@ -31,16 +31,21 @@ class PaidMalformedResponse(RuntimeError):
     def __init__(self, message: str, *, usage: dict[str, Any], model: Any, response_id: Any,
                  latency_seconds: float, text: str | None = None,
                  finish_reason: str | None = None, native_finish_reason: str | None = None,
-                 error: Any = None) -> None:
+                 error: Any = None, refusal: str | None = None) -> None:
         super().__init__(message)
         self.usage, self.model, self.response_id = usage, model, response_id
         self.latency_seconds = latency_seconds
         self.text, self.finish_reason = text, finish_reason
         self.native_finish_reason, self.error = native_finish_reason, error
+        self.refusal = refusal
 
 
 class PaidProviderError(PaidMalformedResponse):
     """The provider reported a generation error, possibly with partial output."""
+
+
+class PaidModelOutputFailure(PaidMalformedResponse):
+    """A billed, well-formed refusal or output-limit stop without answer text."""
 
 
 def build_live_messages(model_input: dict[str, Any]) -> list[dict[str, str]]:
@@ -217,6 +222,7 @@ def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = 
     first = choices[0] if isinstance(choices, list) and choices and isinstance(choices[0], dict) else {}
     message = first.get("message")
     text = message.get("content") if isinstance(message, dict) else None
+    refusal = message.get("refusal") if isinstance(message, dict) else None
     required_usage = ("prompt_tokens", "completion_tokens", "cost")
     usage_complete = isinstance(usage, dict) and all(
         isinstance(usage.get(key), (int, float)) and not isinstance(usage.get(key), bool) and
@@ -226,9 +232,22 @@ def call_live_model(*, model: str, model_input: dict[str, Any], base_url: str = 
                    latency_seconds=latency, text=text if isinstance(text, str) else None,
                    finish_reason=first.get("finish_reason"),
                    native_finish_reason=first.get("native_finish_reason"),
-                   error=payload_object.get("error") or first.get("error"))
+                   error=payload_object.get("error") or first.get("error"),
+                   refusal=refusal if isinstance(refusal, str) else None)
     if details["error"] is not None or details["finish_reason"] == "error":
         raise PaidProviderError("provider reported a generation error", **details)
+    # OpenRouter permits null content for a filtered or exhausted completion.
+    # Classify only an explicit model-output stop with a valid message envelope
+    # and complete billing; unknown blanks and broken protocol still stop a job.
+    empty_content = text is None or (isinstance(text, str) and not text.strip())
+    model_stop = (details["finish_reason"] in ("content_filter", "length", "refusal")
+                  or details["native_finish_reason"] == "refusal"
+                  or (details["finish_reason"] == "stop" and
+                      isinstance(refusal, str) and bool(refusal.strip())))
+    if (usage_complete and isinstance(message, dict) and
+            message.get("role") == "assistant" and "content" in message and
+            empty_content and model_stop):
+        raise PaidModelOutputFailure("model returned no answer after a documented stop", **details)
     if not isinstance(text, str) or not text.strip() or not usage_complete:
         raise PaidMalformedResponse("HTTP-success response had unusable content or usage",
                                     **details)

@@ -1,5 +1,9 @@
 # D5 team safety acceptance — 6 September 2026 (SGT)
 
+**Current operating reference:** [D5_CROSS_MODEL_CHECK.md](D5_CROSS_MODEL_CHECK.md)
+and [D5_MODEL_BATTERY.md](D5_MODEL_BATTERY.md) supersede this historical run order
+with the five-job interface audit, r6 retention decision and cohort checkpoints.
+
 **Historical repair audit.** For the later check of merged main, teacher-source
 precedence, completed job 1 and the newly identified provider-parameter blocker,
 read [D5_REQUIREMENTS_CHECK.md](D5_REQUIREMENTS_CHECK.md). Passing the synthetic
