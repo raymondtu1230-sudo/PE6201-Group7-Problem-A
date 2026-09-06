@@ -8,6 +8,11 @@ The [machine evidence](results/d5-readiness/final_risk_audit.json) records the
 test outcomes and exact source hashes. The [runbook](D5_MODEL_BATTERY.md) is the
 current execution reference. Earlier readiness reports remain historical snapshots.
 
+Release follow-through: PR #34 merged these repairs; PR #35 published the
+replacement lock. The common experimental checkout is
+`4c79c92fd0e68d802e1c6390afa2427202d2aa21`. Subsequent documentation clarifications
+leave the runtime, locked settings, recorded results and chosen checkout unchanged.
+
 ## Reproduced gaps and bounded repairs
 
 | Gap missed by the original tests | Reproduction and new behavior |
@@ -98,11 +103,12 @@ commit or selected into the new comparison based on its score.
 
 ## Release and remaining checks
 
-The PR #32 lock correctly rejects these four changed files. The tested repair
-must be merged first; then generate the new formal lock from that clean merged
-commit and publish it through a separate lock-only PR. Members use the full
-merge SHA of that lock release and verify its committed lock. No member generates
-a replacement locally. The runtime hashes in this report must match that release.
+The PR #32 lock correctly rejected these four changed files. The tested repair
+was merged in PR #34; the new formal lock was then generated from that clean
+merged commit and published in the separate lock-only PR #35. All five keyless
+preflights passed at that release with 0 existing and 70 remaining trials each.
+Members use its full merge SHA and verify its committed lock. No member generates
+a replacement locally. The runtime hashes in this report match that release.
 
 Only then proceed to each member's Codespaces status, unused r7 output path,
 private key ownership, actual balance and read-only preflight. All five jobs

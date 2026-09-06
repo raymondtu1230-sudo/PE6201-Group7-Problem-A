@@ -6,8 +6,11 @@ collections are pending. TU WEIKANG's completed r6 remains historical evidence:
 33/70 final passes, USD 0.73754105, with six human-confirmed judgements. See the
 [result index](results/d5/README.md) for its role and the separate cost ledger.
 The [latest full regression and additional risk checks](D5_FINAL_RISK_CHECK.md)
-include GPT, Qwen, Haiku and both Gemini prompt versions. The additional repairs
-require a replacement lock from the clean merged runtime, published separately.
+include GPT, Qwen, Haiku and both Gemini prompt versions. PR #34 merged the
+additional repairs and PR #35 separately published their replacement lock.
+The common experimental checkout remains the PR #35 merge,
+`4c79c92fd0e68d802e1c6390afa2427202d2aa21`; later documentation-only clarifications
+do not change this chosen version or require a new lock.
 Follow the [current operating sequence](D5_MODEL_BATTERY.md):
 pin one exact checkout commit for all five members, verify the published lock and
 each member's environment, then inspect all five first trials and all five
